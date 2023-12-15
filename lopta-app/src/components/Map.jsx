@@ -139,17 +139,15 @@ function Map() {
 
     return (
         <div className="Map">
-
-            <div className="pt-10 container w-full h-max flex justify-center items-center">
-                <div className="w-1/2 h-56 shadow-2xl flex flex-col justify-center items-center">
-                    <div ref={mapElement} className="mapDiv w-full h-full" />
+            <div className="pt-16 pl-10 container w-full h-120 flex justify-center items-center">
+                <div className="w-full h-96 shadow-2xl flex flex-col justify-center items-center">
+                    <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '600px' }} />
                     <button onClick={createRoute} className="bg-blue-400 mt-4 px-4 py-2 text-white rounded-md">
                         Create Route
                     </button>
                 </div>
             </div>
-
-        </div >
+        </div>
     );
 }
 
