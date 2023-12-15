@@ -14,7 +14,7 @@ const JourneyRoute = () => {
   let handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let post = await fetch("http://localhost:5173/journeyRoute", {
+      let post = await fetch("http://localhost:8000/journeyRoute", {
         method: "POST",
         body: JSON.stringify({
           startingAddress: startingAddress,
