@@ -26,7 +26,7 @@ const JourneyRoute = () => {
           "Content-Type": "application/json"
         }
       });
-  
+
       if (post.ok) {
         let postJSON = await post.json();
         setStartingAddress("");
@@ -94,6 +94,7 @@ const JourneyRoute = () => {
                   type="number"
                   min="0"
                   placeholder="Age"
+                  onChange={(e) => setAge(e.target.value)}
                 />
               </div>
 
@@ -102,7 +103,8 @@ const JourneyRoute = () => {
                   <FaTransgender />
                   Gender:
                 </label>
-                <select id="gender" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-green-500 focus:border-green-500 block w-28 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500">
+                <select id="gender" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-green-500 focus:border-green-500 block w-28 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500"
+                  onChange={(e) => setGender(e.target.value)}>
                   <option defaultValue>Select a gender</option>
                   <option value="M">Male</option>
                   <option value="F">Female</option>
