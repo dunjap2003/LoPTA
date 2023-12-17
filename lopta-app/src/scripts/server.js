@@ -9,7 +9,6 @@ app.use(cors());
 
 app.post('/journeyRoute', (req, res) => {
   const data = req.body;
-  console.log(data);
 
   if(data.checkbox == true){
     let startingURL = "https://nominatim.openstreetmap.org/search?format=json&limit=3&q=" + data["startingAddress"]

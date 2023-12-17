@@ -16,34 +16,47 @@ const JourneyRoute = () => {
     e.preventDefault();
 
     if (!checkbox) {
-      if (!age) {
-        setMessage(prevMessages => new Set([...prevMessages, "Age"]));
+      if (!age || gender == 'Select a gender') {
+        if (!age) {
+          setMessage(prevMessages => new Set([...prevMessages, "Age"]));
+        }
+
+        if (gender == 'Select a gender') {
+          setMessage(prevMessages => new Set([...prevMessages, "Gender"]));
+        }
+
         return;
       }
 
-      else if (gender == 'Select a gender') {
-        setMessage(prevMessages => new Set([...prevMessages, "Gender"]));
+      else{
+        setMessage(new Set());
       }
+
 
     } else {
-      if (!age) {
-        setMessage(prevMessages => new Set([...prevMessages, "Age"]));
+      if (!age || gender == 'Select a gender' || !startingAddress || !destinationAddress) {
+        if (!age) {
+          setMessage(prevMessages => new Set([...prevMessages, "Age"]));
+        }
+
+
+        if (gender == 'Select a gender') {
+          setMessage(prevMessages => new Set([...prevMessages, "Gender"]));
+        }
+
+        if (!startingAddress) {
+          setMessage(prevMessages => new Set([...prevMessages, "Starting Address"]));
+        }
+
+        if (!destinationAddress) {
+          setMessage(prevMessages => new Set([...prevMessages, "Destination Address"]));
+        }
+
         return;
       }
 
-      else if (gender == 'Select a gender') {
-        setMessage(prevMessages => new Set([...prevMessages, "Gender"]));
-        return;
-      }
-
-      else if (!startingAddress) {
-        setMessage(prevMessages => new Set([...prevMessages, "Starting Address"]));
-        return;
-      }
-
-      else if (!destinationAddress) {
-        setMessage(prevMessages => new Set([...prevMessages, "Destination Address"]));
-        return;
+      else{
+        setMessage(new Set());
       }
     }
 
@@ -55,7 +68,7 @@ const JourneyRoute = () => {
           destinationAddress: destinationAddress,
           age: age,
           gender: gender,
-          checkbox: checkbox
+          checkbox: checkbox,
         }),
         headers: {
           "Content-Type": "application/json"
@@ -67,9 +80,12 @@ const JourneyRoute = () => {
         setStartingAddress("");
         setDestinationAddress("");
         setGender("");
-        setMessage("");
+        setMessage(["Form submitted successfully"]);
+        console.log(post.status);
       } else {
-        setMessage("Some error occurred");
+        let errorMessages = await post.json();
+        console.log("Error response:", errorMessages);
+        setMessage(errorMessages);
       }
     } catch (err) {
       console.log(err);
@@ -83,13 +99,12 @@ const JourneyRoute = () => {
 
   return (
     <>
-      {messages.size > 0 && (
-        <p className="flex text-red-500 font-bold text-2xl pt-10 pl-24">
-          {messages.size === 1
-            ? `You must fill out the following field: ${Array.from(messages)[0]}.`
-            : `You must fill out the following fields: ${Array.from(messages).join(", ")}.`}
-        </p>
-      )}
+      <div className="flex text-red-500 font-bold text-2xl pt-10 pl-24">
+        {messages.size > 0 && (
+          <p>You must fill out the following fields: {Array.from(messages).join(", ")}. </p>
+        )}
+      </div>
+
       <div className="flex items-center w-full">
         <div className="flex flex-col items-center justify-center h-screen">
           <div>
