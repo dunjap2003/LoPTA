@@ -2,9 +2,8 @@ import { FaLocationDot } from "react-icons/fa6";
 import { Tb123 } from "react-icons/tb";
 import { FaTransgender } from "react-icons/fa6";
 import { useState } from "react";
-import Map from "./Map";
 
-const JourneyRoute = () => {
+const JourneyRoute = ({ onRouteCreate }) => {
   const [startingAddress, setStartingAddress] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
   const [age, setAge] = useState('');
@@ -28,8 +27,9 @@ const JourneyRoute = () => {
         return;
       }
 
-      else{
+      else {
         setMessage(new Set());
+        onRouteCreate();
       }
 
 
@@ -55,13 +55,14 @@ const JourneyRoute = () => {
         return;
       }
 
-      else{
+      else {
         setMessage(new Set());
+        onRouteCreate();
       }
     }
 
     try {
-      let post = await fetch("http://localhost:8000/journeyRoute", {
+      let post = await fetch("http://localhost:8000/predict", {
         method: "POST",
         body: JSON.stringify({
           startingAddress: startingAddress,
@@ -99,16 +100,15 @@ const JourneyRoute = () => {
 
   return (
     <>
-      <div className="flex text-red-500 font-bold text-2xl pt-10 pl-24">
-        {messages.size > 0 && (
-          <p>You must fill out the following fields: {Array.from(messages).join(", ")}. </p>
-        )}
-      </div>
+        <div className="flex text-red-500 font-bold text-2xl pt-10">
+          {messages.size > 0 && (
+            <p>You must fill out the following fields: {Array.from(messages).join(", ")}. </p>
+          )}
+        </div>
 
-      <div className="flex items-center w-full">
         <div className="flex flex-col items-center justify-center h-screen">
           <div>
-            <h1 className="mb-4 font-bold text-2xl text-green-700">Please fill out information about your journey route.</h1>
+            <h1 className="mb-4 font-bold text-2xl text-primary">Please fill out information about your journey route.</h1>
           </div>
 
           <div className="w-full max-w-2xl">
@@ -183,7 +183,7 @@ const JourneyRoute = () => {
 
               <div className="flex items-center justify-center">
                 <button
-                  className="bg-green-700 hover:bg-green-900 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  className="bg-secondary hover:bg-white text-white hover:text-secondary border-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                   type="submit"
                   onClick={handleSubmit}
                 >
@@ -193,9 +193,6 @@ const JourneyRoute = () => {
             </form>
           </div>
         </div>
-        <Map />
-      </div>
-
     </>
   );
 };

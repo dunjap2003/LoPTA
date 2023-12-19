@@ -7,16 +7,39 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-app.post('/journeyRoute', (req, res) => {
-  const data = req.body;
+let startingJSON, destinationJSON;
+let final;
+app.post('/predict', async (req, res) => {
+  let data = req.body;
 
-  if(data.checkbox == true){
-    let startingURL = "https://nominatim.openstreetmap.org/search?format=json&limit=3&q=" + data["startingAddress"]
-    let destinationURL = "https://nominatim.openstreetmap.org/search?format=json&limit=3&q=" + data["destinationAddress"]
-  
-    fetch(startingURL).then(response => response.json()) .then(data => console.log(data[0].lat + " " + data[0].lon)) .catch(error => console.error(error));
-    fetch(destinationURL).then(response => response.json()) .then(data => console.log(data[0].lat + " " + data[0].lon))  .catch(error => console.error(error));
+  if (data.checkbox == true) {
+    try {
+      let totalStarting = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=3&q=" + data["startingAddress"])
+      startingJSON = await totalStarting.text();
+
+      let totalDestination = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=3&q=" + data["destinationAddress"]);
+      destinationJSON = await totalDestination.text();
+
+    } catch (e) {
+      console.log(e);
+    }
   }
+
+  final = {
+    "checkbox": data.checkbox,
+    "starting": {
+      "lon": JSON.parse(startingJSON)[0].lon,
+      "lat": JSON.parse(startingJSON)[0].lat
+    },
+    "destination": {
+      "lon": JSON.parse(destinationJSON)[0].lon,
+      "lat": JSON.parse(destinationJSON)[0].lat
+    }
+  }
+})
+
+app.get('/predict', async (req, res) => {
+  res.send(final)
 })
 
 const PORT = 8000;

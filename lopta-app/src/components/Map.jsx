@@ -2,7 +2,7 @@ import '@tomtom-international/web-sdk-maps/dist/maps.css'; // Import the CSS sty
 import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
-
+import JourneyRoute from './JourneyRoute';
 
 function Map() {
     const mapElement = useRef();
@@ -28,7 +28,16 @@ function Map() {
         map.setZoom(10);
     };
 
-    // ... (previous code remains the same)
+    let data;
+    const getCoordinates = async () => {
+        try {
+            const response = await fetch("http://localhost:8000/predict");
+            data = await response.json();
+            console.log(data);
+        } catch (e) {
+            console.log(e);
+        }
+    };
 
     useEffect(() => {
         const initializeMap = async () => {
@@ -65,10 +74,10 @@ function Map() {
         };
     }, [mapLongitude, mapLatitude]);
 
-
-
     useEffect(() => {
         if (map) {
+            getCoordinates();
+            console.log("data " + data);
             const clickHandler = function (e) {
                 setMarker(prevMarkers => {
                     const newMarker = new tt.Marker().setLngLat(e.lngLat).addTo(map);
@@ -137,17 +146,24 @@ function Map() {
         }
     };
 
+    const onRouteCreate = () => {
+        createRoute();
+    };
+
     return (
-        <div className="Map">
-            <div className="pt-16 pl-10 container w-full h-120 flex justify-center items-center">
-                <div className="w-full h-96 shadow-2xl flex flex-col justify-center items-center">
-                    <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '600px' }} />
-                    <button onClick={createRoute} className="bg-blue-400 mt-4 px-4 py-2 text-white rounded-md">
-                        Create Route
-                    </button>
+        <>
+            <div className="flex items-center w-full">
+                <JourneyRoute onRouteCreate={onRouteCreate} />
+                <div className="Map">
+                    <div className="pt-16 pl-10 container w-full h-120 flex justify-center items-center">
+                        <div className="w-full h-96 shadow-2xl flex flex-col justify-center items-center">
+                            <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '600px' }} />
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
+
     );
 }
 
