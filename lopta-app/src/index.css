@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@layer base {
+    li {
+      @apply p-4
+      tracking-widest hover:text-secondary
+    }
+  
+    button {
+      @apply text-white border bg-secondary border-secondary
+      hover:text-secondary hover:bg-tertiary rounded-md
+    }
+  }
+
+  @media screen(lg) {
+    .bg-tabs {
+      width: 2500px;
+      height: 750px;
+      right: 60%;
+      @apply absolute rounded-r-full top-60 bg-tertiary;
+    }
+  }
+
+  .panel {
+    display: none;
+  }
+  .panel.active {
+    display: flex;
+  }
