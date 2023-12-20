@@ -1,11 +1,11 @@
 import Navbar from '../components/Navbar'
-import Map from '../components/Map'
+import JourneyRoute from '../components/JourneyRoute'
 import Footer from '../components/Footer'
 function Predict() {
     return (
         <>
             <Navbar screen="Predict" />
-            <Map />
+            <JourneyRoute />
             <Footer />
         </>
 

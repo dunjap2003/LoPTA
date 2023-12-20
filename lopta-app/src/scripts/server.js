@@ -36,10 +36,8 @@ app.post('/predict', async (req, res) => {
       "lat": JSON.parse(destinationJSON)[0].lat
     }
   }
-})
 
-app.get('/predict', async (req, res) => {
-  res.send(final)
+  res.json(final);
 })
 
 const PORT = 8000;

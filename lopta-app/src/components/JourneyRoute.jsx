@@ -2,17 +2,21 @@ import { FaLocationDot } from "react-icons/fa6";
 import { Tb123 } from "react-icons/tb";
 import { FaTransgender } from "react-icons/fa6";
 import { useState } from "react";
+import Map from "./Map";
 
-const JourneyRoute = ({ onRouteCreate }) => {
+function JourneyRoute() {
   const [startingAddress, setStartingAddress] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState('Select a gender');
   const [checkbox, setCheckbox] = useState(false);
   const [messages, setMessage] = useState(new Set());
+  const [finalData, setFinalData] = useState(null);
+  const [onRouteCreate, setOnRouteCreate] = useState(null);
 
   let handleSubmit = async (e) => {
     e.preventDefault();
+
 
     if (!checkbox) {
       if (!age || gender == 'Select a gender') {
@@ -29,7 +33,7 @@ const JourneyRoute = ({ onRouteCreate }) => {
 
       else {
         setMessage(new Set());
-        onRouteCreate();
+        onRouteCreate((createRoute) => createRoute()); 
       }
 
 
@@ -57,7 +61,7 @@ const JourneyRoute = ({ onRouteCreate }) => {
 
       else {
         setMessage(new Set());
-        onRouteCreate();
+        onRouteCreate((createRoute) => createRoute()); 
       }
     }
 
@@ -77,7 +81,10 @@ const JourneyRoute = ({ onRouteCreate }) => {
       });
 
       if (post.ok) {
-        let postJSON = await post.json();
+        let finalData = await post.json();
+        setFinalData(finalData);
+        console.log(finalData);
+
         setStartingAddress("");
         setDestinationAddress("");
         setGender("");
@@ -100,6 +107,7 @@ const JourneyRoute = ({ onRouteCreate }) => {
 
   return (
     <>
+      <div className="flex">
         <div className="flex text-red-500 font-bold text-2xl pt-10">
           {messages.size > 0 && (
             <p>You must fill out the following fields: {Array.from(messages).join(", ")}. </p>
@@ -108,11 +116,11 @@ const JourneyRoute = ({ onRouteCreate }) => {
 
         <div className="flex flex-col items-center justify-center h-screen">
           <div>
-            <h1 className="mb-4 font-bold text-2xl text-primary">Please fill out information about your journey route.</h1>
+            <h1 className="mb-4 font-bold text-2xl text-primary"></h1>
           </div>
 
           <div className="w-full max-w-2xl">
-            <form className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={handleSubmit}>
+            <form className="bg-white shadow-md rounded px-8 pt-10 pb-8 mb-4" onSubmit={handleSubmit}>
               <div>
                 <input type="checkbox" className="pr-2" checked={checkbox} onChange={onChangeCheckBox} />
                 I would like to enter my starting and destination addresses directly, instead of pointing on the map.
@@ -193,6 +201,9 @@ const JourneyRoute = ({ onRouteCreate }) => {
             </form>
           </div>
         </div>
+        <Map onRouteCreate={(createRoute) => setOnRouteCreate(() => createRoute)} />
+      </div>
+
     </>
   );
 };

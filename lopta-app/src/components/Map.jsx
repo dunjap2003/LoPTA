@@ -2,9 +2,8 @@ import '@tomtom-international/web-sdk-maps/dist/maps.css'; // Import the CSS sty
 import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
-import JourneyRoute from './JourneyRoute';
 
-function Map() {
+function Map({ onRouteCreate }) {
     const mapElement = useRef();
     const [mapLongitude, setMapLongitude] = useState(-0.118092 || 0); // Providing a default value of 0 if null is encountered
     const [mapLatitude, setMapLatitude] = useState(51.50000 || 0); // Providing a default value of 0 if null is encountered
@@ -18,25 +17,12 @@ function Map() {
     };
 
     const updateLatitude = (value) => {
-
         setMapLatitude((value));
-
     };
 
     const updateMap = () => {
         map.setCenter([parseFloat(mapLongitude), parseFloat(mapLatitude)]);
         map.setZoom(10);
-    };
-
-    let data;
-    const getCoordinates = async () => {
-        try {
-            const response = await fetch("http://localhost:8000/predict");
-            data = await response.json();
-            console.log(data);
-        } catch (e) {
-            console.log(e);
-        }
     };
 
     useEffect(() => {
@@ -76,8 +62,6 @@ function Map() {
 
     useEffect(() => {
         if (map) {
-            getCoordinates();
-            console.log("data " + data);
             const clickHandler = function (e) {
                 setMarker(prevMarkers => {
                     const newMarker = new tt.Marker().setLngLat(e.lngLat).addTo(map);
@@ -146,21 +130,22 @@ function Map() {
         }
     };
 
-    const onRouteCreate = () => {
-        createRoute();
-    };
-
+    useEffect(() => {
+        if (onRouteCreate) {
+          onRouteCreate(createRoute);
+        }
+      }, [onRouteCreate]);
+      
     return (
         <>
             <div className="flex items-center w-full">
-                <JourneyRoute onRouteCreate={onRouteCreate} />
                 <div className="Map">
                     <div className="pt-16 pl-10 container w-full h-120 flex justify-center items-center">
                         <div className="w-full h-96 shadow-2xl flex flex-col justify-center items-center">
                             <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '600px' }} />
                         </div>
                     </div>
-                </div>
+                </div> 
             </div>
         </>
 
