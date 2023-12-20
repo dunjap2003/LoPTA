@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
 
-function Map({ onRouteCreate }) {
+function Map({ calculateButton }) {
     const mapElement = useRef();
     const [mapLongitude, setMapLongitude] = useState(-0.118092 || 0); // Providing a default value of 0 if null is encountered
     const [mapLatitude, setMapLatitude] = useState(51.50000 || 0); // Providing a default value of 0 if null is encountered
@@ -80,6 +80,10 @@ function Map({ onRouteCreate }) {
         }
     }, [map]);
 
+    useEffect(() => {
+        createRoute();
+    }, [calculateButton]);
+
 
     const displayRoute = (geoJson) => {
         map.addLayer({
@@ -95,7 +99,8 @@ function Map({ onRouteCreate }) {
             }
         })
 
-    }
+    } 
+
 
     const createRoute = async () => {
         try {
@@ -130,11 +135,6 @@ function Map({ onRouteCreate }) {
         }
     };
 
-    useEffect(() => {
-        if (onRouteCreate) {
-          onRouteCreate(createRoute);
-        }
-      }, [onRouteCreate]);
       
     return (
         <>

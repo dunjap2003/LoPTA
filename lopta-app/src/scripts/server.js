@@ -8,7 +8,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 let startingJSON, destinationJSON;
-let final;
+let final = {};
 app.post('/predict', async (req, res) => {
   let data = req.body;
 
@@ -25,6 +25,8 @@ app.post('/predict', async (req, res) => {
     }
   }
 
+
+
   final = {
     "checkbox": data.checkbox,
     "starting": {
@@ -36,6 +38,7 @@ app.post('/predict', async (req, res) => {
       "lat": JSON.parse(destinationJSON)[0].lat
     }
   }
+  
 
   res.json(final);
 })

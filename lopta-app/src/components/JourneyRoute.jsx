@@ -11,8 +11,8 @@ function JourneyRoute() {
   const [gender, setGender] = useState('Select a gender');
   const [checkbox, setCheckbox] = useState(false);
   const [messages, setMessage] = useState(new Set());
+  const [calculateButton, setCalculateButton] = useState(false);
   const [finalData, setFinalData] = useState(null);
-  const [onRouteCreate, setOnRouteCreate] = useState(null);
 
   let handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +33,7 @@ function JourneyRoute() {
 
       else {
         setMessage(new Set());
-        onRouteCreate((createRoute) => createRoute()); 
+        setCalculateButton(true);
       }
 
 
@@ -61,7 +61,7 @@ function JourneyRoute() {
 
       else {
         setMessage(new Set());
-        onRouteCreate((createRoute) => createRoute()); 
+        setCalculateButton(true);
       }
     }
 
@@ -201,7 +201,7 @@ function JourneyRoute() {
             </form>
           </div>
         </div>
-        <Map onRouteCreate={(createRoute) => setOnRouteCreate(() => createRoute)} />
+        <Map calculateButton = {calculateButton}/>
       </div>
 
     </>
