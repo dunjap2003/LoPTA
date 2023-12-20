@@ -20,26 +20,28 @@ app.post('/predict', async (req, res) => {
       let totalDestination = await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=3&q=" + data["destinationAddress"]);
       destinationJSON = await totalDestination.text();
 
+      final = {
+        "checkbox": data.checkbox,
+        "starting": {
+          "lon": JSON.parse(startingJSON)[0].lon,
+          "lat": JSON.parse(startingJSON)[0].lat
+        },
+        "destination": {
+          "lon": JSON.parse(destinationJSON)[0].lon,
+          "lat": JSON.parse(destinationJSON)[0].lat
+        }
+      }
     } catch (e) {
       console.log(e);
     }
   }
 
-
-
-  final = {
-    "checkbox": data.checkbox,
-    "starting": {
-      "lon": JSON.parse(startingJSON)[0].lon,
-      "lat": JSON.parse(startingJSON)[0].lat
-    },
-    "destination": {
-      "lon": JSON.parse(destinationJSON)[0].lon,
-      "lat": JSON.parse(destinationJSON)[0].lat
+  else{
+    final = {
+      "checkbox": data.checkbox
     }
   }
   
-
   res.json(final);
 })
 

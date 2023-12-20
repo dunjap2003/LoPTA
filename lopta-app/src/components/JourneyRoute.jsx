@@ -33,7 +33,6 @@ function JourneyRoute() {
 
       else {
         setMessage(new Set());
-        setCalculateButton(true);
       }
 
 
@@ -61,7 +60,6 @@ function JourneyRoute() {
 
       else {
         setMessage(new Set());
-        setCalculateButton(true);
       }
     }
 
@@ -84,6 +82,7 @@ function JourneyRoute() {
         let finalData = await post.json();
         setFinalData(finalData);
         console.log(finalData);
+        setCalculateButton(true);
 
         setStartingAddress("");
         setDestinationAddress("");
@@ -201,7 +200,7 @@ function JourneyRoute() {
             </form>
           </div>
         </div>
-        <Map calculateButton = {calculateButton}/>
+        <Map calculateButton = {calculateButton} finalData = {finalData}/>
       </div>
 
     </>

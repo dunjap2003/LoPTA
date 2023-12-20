@@ -3,13 +3,14 @@ import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
 
-function Map({ calculateButton }) {
+function Map({ calculateButton, finalData }) {
     const mapElement = useRef();
     const [mapLongitude, setMapLongitude] = useState(-0.118092 || 0); // Providing a default value of 0 if null is encountered
     const [mapLatitude, setMapLatitude] = useState(51.50000 || 0); // Providing a default value of 0 if null is encountered
     const [map, setMap] = useState(null);
     const [markers, setMarker] = useState([]);
     const [allPoints, setAllPoints] = useState([]);
+    const [final, setFinal] = useState(null);
 
     const updateLongitude = (value) => {
         setMapLongitude((value));
@@ -84,6 +85,14 @@ function Map({ calculateButton }) {
         createRoute();
     }, [calculateButton]);
 
+    useEffect(() => {
+        console.log("final dataaa: ", finalData);
+        setFinal(finalData);
+    }, [finalData]);
+    
+    useEffect(() => {
+        console.log("final:", final);
+    }, [final]);
 
     const displayRoute = (geoJson) => {
         map.addLayer({
@@ -104,6 +113,12 @@ function Map({ calculateButton }) {
 
     const createRoute = async () => {
         try {
+            if (final) {
+                if(final.checkbox === true){
+                    console.log("najnajanjanjaajajaj")
+                }
+            }
+
             if (markers.length === 0) {
                 console.log("No markers to create a route");
                 return;
@@ -126,6 +141,7 @@ function Map({ calculateButton }) {
                     allPointsData.push(point);
                 });
                 console.log(allPointsData);
+                console.log(finalData);
                 setAllPoints(allPointsData);
             } else {
                 console.error("Error calculating route: Invalid route data");
