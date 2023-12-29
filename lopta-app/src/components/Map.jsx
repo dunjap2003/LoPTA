@@ -3,14 +3,13 @@ import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
 
-function Map({ calculateButton, finalData }) {
+function Map({ calculateButton }) {
     const mapElement = useRef();
     const [mapLongitude, setMapLongitude] = useState(-0.118092 || 0); // Providing a default value of 0 if null is encountered
     const [mapLatitude, setMapLatitude] = useState(51.50000 || 0); // Providing a default value of 0 if null is encountered
     const [map, setMap] = useState(null);
     const [markers, setMarker] = useState([]);
     const [allPoints, setAllPoints] = useState([]);
-    const [final, setFinal] = useState(null);
 
     const updateLongitude = (value) => {
         setMapLongitude((value));
