@@ -86,14 +86,9 @@ function Map({ calculateButton, finalData }) {
     }, [calculateButton]);
 
     useEffect(() => {
-        console.log("final dataaa: ", finalData);
-        setFinal(finalData);
+        console.log("final data: ", finalData);
     }, [finalData]);
     
-    useEffect(() => {
-        console.log("final:", final);
-    }, [final]);
-
     const displayRoute = (geoJson) => {
         map.addLayer({
             'id': 'route',
@@ -110,12 +105,36 @@ function Map({ calculateButton, finalData }) {
 
     } 
 
-
     const createRoute = async () => {
         try {
-            if (final) {
-                if(final.checkbox === true){
-                    console.log("najnajanjanjaajajaj")
+            let routeOptions;
+            if (finalData.checkbox === false) {
+                routeOptions = {
+                    key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
+                    locations: markers.map((marker) => marker.getLngLat()),
+                    travelMode: 'car'
+                };  
+                
+                console.log("lokacije: ", routeOptions.locations);
+            }
+
+            else{
+                setMarker(prevMarkers => {
+                    const startingMarker = new tt.Marker().setLngLat(finalData.starting).addTo(map);
+                    const updatedMarkers = [...prevMarkers, startingMarker];
+                    return updatedMarkers;
+                });
+
+                setMarker(prevMarkers => {
+                    const finalMarker = new tt.Marker().setLngLat(finalData.destination).addTo(map);
+                    const updatedMarkers = [...prevMarkers, finalMarker];
+                    return updatedMarkers;
+                });
+
+                routeOptions = {
+                    key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
+                    locations: [finalData.starting, finalData.destination],
+                    travelMode: 'car'
                 }
             }
 
@@ -124,24 +143,16 @@ function Map({ calculateButton, finalData }) {
                 return;
             }
 
-            const routeOptions = {
-                key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
-                locations: markers.map((marker) => marker.getLngLat()),
-                travelMode: 'car'
-            };
-
             const routeData = await ad.services.calculateRoute(routeOptions);
             if (routeData) {
-                console.log(routeData);
+                console.log("route data ", routeData);
                 const geoJson = routeData.toGeoJson();
                 displayRoute(geoJson);
-                // Handle the route data or state update here
                 const allPointsData = [];
                 routeData.routes[0].legs[0].points.forEach(point => {
                     allPointsData.push(point);
                 });
                 console.log(allPointsData);
-                console.log(finalData);
                 setAllPoints(allPointsData);
             } else {
                 console.error("Error calculating route: Invalid route data");
@@ -150,6 +161,10 @@ function Map({ calculateButton, finalData }) {
             console.error("Error calculating route:", error);
         }
     };
+
+    useEffect(() => {
+        createRoute();
+    }, [markers]);
 
       
     return (

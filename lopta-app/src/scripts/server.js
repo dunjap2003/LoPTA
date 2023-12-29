@@ -23,11 +23,11 @@ app.post('/predict', async (req, res) => {
       final = {
         "checkbox": data.checkbox,
         "starting": {
-          "lon": JSON.parse(startingJSON)[0].lon,
+          "lng": JSON.parse(startingJSON)[0].lon,
           "lat": JSON.parse(startingJSON)[0].lat
         },
         "destination": {
-          "lon": JSON.parse(destinationJSON)[0].lon,
+          "lng": JSON.parse(destinationJSON)[0].lon,
           "lat": JSON.parse(destinationJSON)[0].lat
         }
       }

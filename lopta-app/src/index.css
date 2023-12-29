@@ -18,6 +18,7 @@
       width: 2500px;
       height: 750px;
       right: 60%;
+      z-index: -1;
       @apply absolute rounded-r-full top-60 bg-tertiary;
     }
   }
