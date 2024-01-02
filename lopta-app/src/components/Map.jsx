@@ -3,13 +3,14 @@ import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
 
-function Map({ calculateButton }) {
+function Map({ calculateButton, finalData }) {
     const mapElement = useRef();
     const [mapLongitude, setMapLongitude] = useState(-0.118092 || 0); // Providing a default value of 0 if null is encountered
     const [mapLatitude, setMapLatitude] = useState(51.50000 || 0); // Providing a default value of 0 if null is encountered
     const [map, setMap] = useState(null);
     const [markers, setMarker] = useState([]);
     const [allPoints, setAllPoints] = useState([]);
+    const [final, setFinal] = useState(null);
 
     const updateLongitude = (value) => {
         setMapLongitude((value));
@@ -85,7 +86,8 @@ function Map({ calculateButton }) {
     }, [calculateButton]);
 
     useEffect(() => {
-        console.log("final data: ", finalData);
+        console.log("final dataaa: ", finalData);
+        setFinal(finalData);
     }, [finalData]);
     
     const displayRoute = (geoJson) => {
@@ -101,12 +103,15 @@ function Map({ calculateButton }) {
                 'line-width': 6
             }
         })
-
     } 
 
     const createRoute = async () => {
         try {
             let routeOptions;
+            if (!finalData) {
+                console.error("finalData is null or undefined");
+            }
+
             if (finalData.checkbox === false) {
                 routeOptions = {
                     key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
@@ -116,32 +121,27 @@ function Map({ calculateButton }) {
                 
                 console.log("lokacije: ", routeOptions.locations);
             }
-
             else{
                 setMarker(prevMarkers => {
                     const startingMarker = new tt.Marker().setLngLat(finalData.starting).addTo(map);
                     const updatedMarkers = [...prevMarkers, startingMarker];
                     return updatedMarkers;
                 });
-
                 setMarker(prevMarkers => {
                     const finalMarker = new tt.Marker().setLngLat(finalData.destination).addTo(map);
                     const updatedMarkers = [...prevMarkers, finalMarker];
                     return updatedMarkers;
                 });
-
                 routeOptions = {
                     key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
                     locations: [finalData.starting, finalData.destination],
                     travelMode: 'car'
                 }
             }
-
             if (markers.length === 0) {
                 console.log("No markers to create a route");
                 return;
             }
-
             const routeData = await ad.services.calculateRoute(routeOptions);
             if (routeData) {
                 console.log("route data ", routeData);
@@ -164,7 +164,6 @@ function Map({ calculateButton }) {
     useEffect(() => {
         createRoute();
     }, [markers]);
-
       
     return (
         <>
