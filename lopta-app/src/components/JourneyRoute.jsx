@@ -1,14 +1,10 @@
 import { FaLocationDot } from "react-icons/fa6";
-import { Tb123 } from "react-icons/tb";
-import { FaTransgender } from "react-icons/fa6";
 import { useState } from "react";
 import Map from "./Map";
 
 function JourneyRoute() {
   const [startingAddress, setStartingAddress] = useState('');
   const [destinationAddress, setDestinationAddress] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('Select a gender');
   const [checkbox, setCheckbox] = useState(false);
   const [messages, setMessage] = useState(new Set());
   const [calculateButton, setCalculateButton] = useState(false);
@@ -18,35 +14,8 @@ function JourneyRoute() {
     e.preventDefault();
 
 
-    if (!checkbox) {
-      if (!age || gender == 'Select a gender') {
-        if (!age) {
-          setMessage(prevMessages => new Set([...prevMessages, "Age"]));
-        }
-
-        if (gender == 'Select a gender') {
-          setMessage(prevMessages => new Set([...prevMessages, "Gender"]));
-        }
-
-        return;
-      }
-
-      else {
-        setMessage(new Set());
-      }
-
-
-    } else {
-      if (!age || gender == 'Select a gender' || !startingAddress || !destinationAddress) {
-        if (!age) {
-          setMessage(prevMessages => new Set([...prevMessages, "Age"]));
-        }
-
-
-        if (gender == 'Select a gender') {
-          setMessage(prevMessages => new Set([...prevMessages, "Gender"]));
-        }
-
+    if (checkbox) {
+      if (!startingAddress || !destinationAddress) {
         if (!startingAddress) {
           setMessage(prevMessages => new Set([...prevMessages, "Starting Address"]));
         }
@@ -54,7 +23,6 @@ function JourneyRoute() {
         if (!destinationAddress) {
           setMessage(prevMessages => new Set([...prevMessages, "Destination Address"]));
         }
-
         return;
       }
 
@@ -69,8 +37,6 @@ function JourneyRoute() {
         body: JSON.stringify({
           startingAddress: startingAddress,
           destinationAddress: destinationAddress,
-          age: age,
-          gender: gender,
           checkbox: checkbox,
         }),
         headers: {
@@ -85,7 +51,7 @@ function JourneyRoute() {
         setCalculateButton(true);
         setStartingAddress("");
         setDestinationAddress("");
-        setGender("");
+
         setMessage(["Form submitted successfully"]);
         console.log(post.status);
       } else {
@@ -155,39 +121,7 @@ function JourneyRoute() {
                   </div>
                 </div>
               )}
-
-              <div className="flex flex-col items-center justify-center mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="age">
-                  <Tb123 />
-                  Age:
-                </label>
-                <input
-                  className="shadow appearance-none border rounded w-20 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  id="age"
-                  type="number"
-                  min="0"
-                  placeholder="Age"
-                  onChange={(e) => setAge(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="flex flex-col items-center justify-center mb-4">
-                <label className="block text-gray-700 text-sm font-bold mb-2 flex items-center" htmlFor="gender">
-                  <FaTransgender />
-                  Gender:
-                </label>
-                <select id="gender" className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded focus:ring-green-500 focus:border-green-500 block w-28 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-green-500 dark:focus:border-green-500"
-                  onChange={(e) => setGender(e.target.value)}
-                  required>
-                  <option defaultValue>Select a gender</option>
-                  <option value="M">Male</option>
-                  <option value="F">Female</option>
-                  <option value="O">Other</option>
-                </select>
-              </div>
-
-              <div className="flex items-center justify-center">
+              <div className="flex items-center justify-center mt-20">
                 <button
                   className="bg-secondary hover:bg-white text-white hover:text-secondary border-2 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                   type="submit"
@@ -199,11 +133,11 @@ function JourneyRoute() {
             </form>
           </div>
         </div>
-        <Map calculateButton = {calculateButton} finalData={finalData}/>
+        <Map calculateButton={calculateButton} finalData={finalData} />
       </div>
 
     </>
   );
-};
+}
 
 export default JourneyRoute;
