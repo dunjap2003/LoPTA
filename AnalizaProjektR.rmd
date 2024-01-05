@@ -1,0 +1,768 @@
+---
+title: "Eksploratorna analiza prometnih nesreća na području Velikog Londona tijekom razdoblja 2020. – 2022. godine"
+author: "LoPTA Projekt R"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse) 
+library(janitor)
+library(patchwork)
+library(wordcloud)
+library(RColorBrewer)
+#library(wordcloud2)
+library(ggplot2)
+library(readxl)
+library(htmltools)
+library(plotly)
+library(leaflet)
+
+
+```
+
+Eksploratorna analiza istražuje uzorke i karakteristike prometnih nesreća na području Londona tijekom trogodišnjeg razdoblja od 2020. do 2022. godine. Cilj analize je pružiti dublji uvid u događaje, istražujući različite parametre poput vremenskih i prostornih uvjeta, demografskih informacija o sudionicima nesreća te vrsta vozila uključenih u incidente.
+
+Proces istraživanja temelji se na detaljnom pregledu skupa podataka koji obuhvaća raznolike faktore koji utječu na nastanak prometnih nesreća. Kroz različite grafičke prikaze, uključujući box plot-ove, histograme i kružne dijagrame, analiza omogućuje bolje razumijevanje odnosa i utjecaja među varijablama.
+
+Ova eksploratorna analiza ima za cilj pružiti prikaz nesreća na cestama Londona  i raznih faktora koji na te iste nesreće utjeću  te poslužiti kao temelj za daljnje istraživanje i  povećanja sigurnosti prometa.
+
+Najprije je podatke iz 9 različitih tablica (3 za svaku od navedenih godina) trebalo urediti i pripremiti za eksploratornu analizu. 
+Započeli smo s učitavanjem tablica o nesrećama u .csv obliku u razvojno okruženje.
+
+```{r}
+collisions2022 <- read_csv("./csv/dft-road-casualty-statistics-collision-2022.csv", show_col_types = F) %>% data.frame(.)
+collisions2021 <- read_csv("./csv/dft-road-casualty-statistics-collision-2021.csv", show_col_types = F) %>% data.frame(.)
+collisions2020 <- read_csv("./csv/dft-road-casualty-statistics-collision-2020.csv", show_col_types = F) %>% data.frame(.)
+```
+Zatim smo ta tri data framea spojili u jedan, pošto se u svakom od njih nalaze iste kolone, istim redoslijedom, kako ne bismo morali triput ponavljati isti posao.
+```{r}
+collisions <- reduce(list(collisions2022, collisions2021, collisions2020), rbind)
+```
+Zatim smo iz dobivenog data framea izbacili sve retke koji se odnose na nesreće koje su se dogodile izvan područja Velikog Londona (vrijednost kolone police_force je različita od 1 i od 48)
+```{r}
+collisions <- filter(collisions, police_force %in% c(1, 48))
+```
+Zatim je uslijedilo eliminiranje svih kolona koje nam za ovu analizu nisu potrebne i/ili interesantne. 
+```{r}
+collisions <- select(collisions, accident_index, accident_year, longitude, latitude, accident_severity, number_of_vehicles, number_of_casualties, date, day_of_week, time, road_type, speed_limit, light_conditions, weather_conditions, road_surface_conditions, did_police_officer_attend_scene_of_accident)
+```
+
+Slijedilo je učitavanje .csv datoteka o žrtvama nesreća i o vozilima koja su sudjelovala u nesrećama te obrada slična obradi nesreća.
+
+Podaci o vozilima koja su sudjelovala u nesrećama:
+```{r}
+vehicles2022 <- read_csv("./csv/dft-road-casualty-statistics-vehicle-2022.csv", show_col_types = F) %>% data.frame(.)
+vehicles2021 <- read_csv("./csv/dft-road-casualty-statistics-vehicle-2021.csv", show_col_types = F) %>% data.frame(.)
+vehicles2020 <- read_csv("./csv/dft-road-casualty-statistics-vehicle-2020.csv", show_col_types = F) %>% data.frame(.)
+
+vehicles <- reduce(list(vehicles2022, vehicles2021, vehicles2020), rbind)
+vehicles <- select(vehicles, accident_index, vehicle_reference, vehicle_type, sex_of_driver, age_of_driver, age_band_of_driver, engine_capacity_cc, age_of_vehicle, generic_make_model, driver_home_area_type)
+```
+
+Podaci o žrtvama nesreća:
+```{r}
+casualties2022 <- read_csv("./csv/dft-road-casualty-statistics-casualty-2022.csv", show_col_types = F) %>% data.frame(.)
+casualties2021 <- read_csv("./csv/dft-road-casualty-statistics-casualty-2021.csv", show_col_types = F) %>% data.frame(.)
+casualties2020 <- read_csv("./csv/dft-road-casualty-statistics-casualty-2020.csv", show_col_types = F) %>% data.frame(.)
+
+casualties <- reduce(list(casualties2022, casualties2021, casualties2020), rbind)
+casualties <- select(casualties, accident_index, vehicle_reference, casualty_reference, casualty_class, sex_of_casualty, age_of_casualty, age_band_of_casualty, casualty_severity, casualty_type)
+```
+
+Za kraj, data frame-ove "collisions", "casualties" i "vehicles" spojili smo u jedan objedinjeni data frame koji je korišten u dijelovima analize.
+
+```{r}
+final_data <- left_join(collisions, vehicles, by = c("accident_index" = "accident_index"))
+final_data <- left_join(final_data, casualties, by = c("accident_index" = "accident_index", "vehicle_reference" = "vehicle_reference"))
+```
+
+
+```{r}
+glimpse(final_data)
+head(final_data)
+summary(final_data)
+nrow(final_data)
+
+```
+
+Koristili smo funkciju clean_names kako bismo ujednačili sva imena u data frame-u (primjerice ime modela vozila koje je sudjelovalo u nesreći).
+```{r}
+final_data <- clean_names(final_data)
+```
+
+GEOGRAFSKI PRIKAZ NAJČEŠĆIH MJESTA NESREĆA
+
+Iskoristili smo geografske koordinate širine i duljine kako bismo geografski prikazali najčešća mjesta nesreća. Crvenim kružićima na karti označili smo lokacije gdje se prometne nesreće najčešće ponavljaju, pružajući učinkovit vizualni prikaz područja s povećanim rizikom nesreća.
+
+
+```{r}
+
+round_coordinates <- function(coord, precision = 0.00045) {
+  return(round(coord / precision) * precision)
+}
+
+# Primijenite funkciju na vaš dataframe
+collisions_rounded <- collisions %>%
+  mutate(rounded_longitude = round_coordinates(longitude),
+         rounded_latitude = round_coordinates(latitude)) %>%
+  group_by(rounded_longitude, rounded_latitude) %>%
+  summarise(count = n()) %>%
+  filter(count > 10) %>%
+  arrange(desc(count))
+
+cat("Najčešća mjesta nesreća (zaokružena na 50 metara):\n")
+print(collisions_rounded)
+
+```
+Prvi korak u našem pristupu bio je zaokruživanje koordinata kako bismo omogućili precizniju analizu podataka. Koristeći informaciju da je 50 metara ekvivalentno 0.00045 stupnjeva, prilagodili smo naše podatke kako bismo dobili česta mjesta nesreće. Ova prilagodba je važna jer nam omogućuje grupiranje nesreća koje su se dogodile na gotovo istim lokacijama, čime dobivamo jasniji uvid u najkritičnija mjesta na prometnicama. 
+
+Nakon toga, koristeći paket dplyr u R-u, izvršili smo grupiranje podataka prema zaokruženim koordinatama, a zatim izračunali ukupan broj nesreća na svakoj lokaciji. Kako bismo se fokusirali na relevantna mjesta, filtrirali smo rezultate i zadržali samo one s više od 20 nesreća, stvarajući tako novi skup podataka za daljnju analizu.
+
+Kako bismo vizualizirali ključne lokacije, iskoristili smo paket Leaflet za stvaranje interaktivne karte. Na ovoj karti su jasno označene lokacije najčešćih nesreća pomoću crvenih kružića. Svaki kružić sadrži informaciju o ukupnom broju nesreća koje su se dogodile na toj lokaciji. Ova interaktivna vizualizacija omogućava brzo prepoznavanje područja s visokim brojem nesreća.
+
+U konačnici, naš pristup analizi podataka i vizualizaciji pruža uvid u problematiku nesreća na prometnicama, ističući ključna područja koja zahtijevaju dodatnu pažnju i mjere opreza radi poboljšanja sigurnosti u prometu.
+
+```{r}
+
+# Filtrirajte lokacije koje ispunjavaju uvjet
+collisions_rounded_filtered <- collisions_rounded %>%
+  filter(count > 10)
+
+# Stvaranje Leaflet mape
+map <- leaflet(collisions_rounded_filtered) %>%
+  addTiles() %>%
+  addCircleMarkers(~rounded_longitude, ~rounded_latitude, 
+                   popup = ~count, label = ~count, color = "red")
+
+# Prikaz mape
+map
+
+
+```
+
+DIJAGRAMI KOJI PRIKAZUJU UČESTALOST NESREĆA OVISNO O TRENUTKU NJIHOVOG DOGAĐAJA
+
+Analizirali smo učestalost prometnih nesreća koristeći stupčasti dijagram kako bismo bolje razumjeli njihovu raspodjelu tijekom različitog doba u danu, dana u tjednu, mjeseca te godina. Navedeni prikazi pružaju korisne informacije o vremenskim uvjetima i sezonskim promjenama koje mogu utjecati na sigurnost u prometu.
+
+```{r}
+collisions_aggregated <- aggregate(accident_index ~ day_of_week, data = collisions, FUN = length)
+
+collisions_aggregated$day_of_week <- factor(collisions_aggregated$day_of_week, levels = c(1, 2, 3, 4, 5, 6, 7),
+                                    labels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+collisions_aggregated_day <- aggregate(accident_index ~ day_of_week, data = collisions, FUN = length)
+ggplot(collisions_aggregated, aes(x = day_of_week, y = accident_index, fill = day_of_week)) +
+  geom_bar(stat = "identity") +
+    geom_text(aes(label = accident_index), vjust = -0.5) + 
+  labs(title = "Broj nesreća prema danu u tjednu", x = "Dan u tjednu", y = "Broj nesreća") +
+  theme_minimal()
+```
+
+
+Analizirali smo podatke o nesrećama grupirajući ih prema danima u tjednu. Korištenjem funkcije `aggregate` dobili smo ukupan broj nesreća za svaki dan. Zatim smo, pomoću ggplot2, vizualizirali ove podatke stvaranjem grafa koji prikazuje distribuciju nesreća tijekom tjedna. Os x označava dane u tjednu, dok os y prikazuje broj nesreća. Boje su dodane radi lakšeg praćenja, a tekstualne oznake iznad stupaca pružaju ukupan broj nesreća za određeni dan.
+
+
+
+
+```{r}
+collisions$hour <- as.numeric(format(as.POSIXct(collisions$time, format="%H:%M:%S"), format="%H"))
+
+collisions_aggregated_time <- aggregate(accident_index ~ hour, data = collisions, FUN = length)
+
+ggplot(collisions_aggregated_time, aes(x = factor(hour), y = accident_index, fill = factor(hour))) +
+    geom_text(aes(label = accident_index), vjust = -0.5,size = 2) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema satu", x = "Sat", y = "Broj nesreća") +
+  theme_minimal()
+```
+
+
+Analizirali smo podatke o nesrećama povezane s vremenom, fokusirajući se na distribuciju nesreća tijekom različitih sati tijekom dana. Prvo smo dodali novi stupac hour u naš skup podataka, koji predstavlja sate tijekom kojih su se nesreće dogodile. To smo postigli ekstrakcijom sata iz vremenskog stupca koristeći funkciju format i as.POSIXct.Nakon toga, koristeći funkciju aggregate, grupirali smo podatke prema satu, dobivajući ukupan broj nesreća za svaki sat. Graf prikazuje broj nesreća na y-osi, dok su sati dana označeni na x-osi. 
+
+
+ANALIZA NESREĆA PO SATU SVAKOG DANA U TJEDNU
+
+Za analizu prometnih nesreća tijekom svakog dana u tjednu, podatke smo filitrirali za svaki dan pojedinačno (npr., day_of_week == 1 za ponedjeljak, day_of_week == 2 za utorak, itd.). Nakon što smo odvojili podatke za svaki dan, koristili smo funkciju aggregate kako bismo grupirali nesreće prema satu, stvarajući sedam zasebnih skupova podataka, svaki odnoseći se na određeni dan u tjednu.Rezultati analize svakog dana prikazani su dijagramima koji vizualiziraju učestalost nesreća po satu. Na x-osi su označeni sati, dok y-os prikazuje broj nesreća.
+
+MONDAY
+```{r}
+# Pretvaranje stupca 'time' u format za rad s vremenom
+collisions$time <- as.POSIXct(collisions$time, format="%H:%M:%S")
+collisions$hour <- as.numeric(format(collisions$time, format="%H"))
+
+# Filtriranje podataka za ponedjeljak (day_of_week == 2)
+collisions_monday <- collisions[collisions$day_of_week == 2, ]
+
+# Analiza broja nesreća po satu za ponedjeljak
+collisions_aggregated_time_monday <- aggregate(accident_index ~ hour, data = collisions_monday, FUN = length)
+
+# Prikaz dijagrama za učestalost nesreća po satu u ponedjeljak
+ggplot(collisions_aggregated_time_monday, aes(x = factor(hour), y = accident_index, fill = factor(hour))) +
+  geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema satu (ponedjeljak)", x = "Sat", y = "Broj nesreća") +
+  theme_minimal()
+
+```
+```{r}
+# Filtriranje podataka za utorak (day_of_week == 3)
+collisions_tuesday <- collisions[collisions$day_of_week == 3, ]
+
+# Analiza broja nesreća po satu za utorak
+collisions_aggregated_time_tuesday <- aggregate(accident_index ~ hour, data = collisions_tuesday, FUN = length)
+
+# Prikaz dijagrama za učestalost nesreća po satu u utorak
+ggplot(collisions_aggregated_time_tuesday, aes(x = factor(hour), y = accident_index, fill = factor(hour))) +
+  geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema satu (utorak)", x = "Sat", y = "Broj nesreća") +
+  theme_minimal()
+
+```
+```{r}
+# Filtriranje podataka za srijedu (day_of_week == 4)
+collisions_wednesday <- collisions[collisions$day_of_week == 4, ]
+
+# Analiza broja nesreća po satu za srijedu
+collisions_aggregated_time_wednesday <- aggregate(accident_index ~ hour, data = collisions_wednesday, FUN = length)
+
+# Prikaz dijagrama za učestalost nesreća po satu u srijedu
+ggplot(collisions_aggregated_time_wednesday, aes(x = factor(hour), y = accident_index, fill = factor(hour))) +
+  geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema satu (srijeda)", x = "Sat", y = "Broj nesreća") +
+  theme_minimal()
+
+```
+
+```{r}
+# Filtriranje podataka za četvrtak (day_of_week == 5)
+collisions_thursday <- collisions[collisions$day_of_week == 5, ]
+
+# Analiza broja nesreća po satu za četvrtak
+collisions_aggregated_time_thursday <- aggregate(accident_index ~ hour, data = collisions_thursday, FUN = length)
+
+# Prikaz dijagrama za učestalost nesreća po satu u četvrtak
+ggplot(collisions_aggregated_time_thursday, aes(x = factor(hour), y = accident_index, fill = factor(hour))) +
+  geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema satu (četvrtak)", x = "Sat", y = "Broj nesreća") +
+  theme_minimal()
+
+```
+```{r}
+# Filtriranje podataka za petak (day_of_week == 6)
+collisions_friday <- collisions[collisions$day_of_week == 6, ]
+
+# Analiza broja nesreća po satu za petak
+collisions_aggregated_time_friday <- aggregate(accident_index ~ hour, data = collisions_friday, FUN = length)
+
+# Prikaz dijagrama za učestalost nesreća po satu u petak
+ggplot(collisions_aggregated_time_friday, aes(x = factor(hour), y = accident_index, fill = factor(hour))) +
+  geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema satu (petak)", x = "Sat", y = "Broj nesreća") +
+  theme_minimal()
+
+```
+```{r}
+# Filtriranje podataka za subotu (day_of_week == 7)
+collisions_saturday <- collisions[collisions$day_of_week == 7, ]
+
+# Analiza broja nesreća po satu za subotu
+collisions_aggregated_time_saturday <- aggregate(accident_index ~ hour, data = collisions_saturday, FUN = length)
+
+# Prikaz dijagrama za učestalost nesreća po satu u subotu
+ggplot(collisions_aggregated_time_saturday, aes(x = factor(hour), y = accident_index, fill = factor(hour))) +
+  geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema satu (subota)", x = "Sat", y = "Broj nesreća") +
+  theme_minimal()
+
+```
+
+```{r}
+# Filtriranje podataka za nedjelju (day_of_week == 1)
+collisions_sunday <- collisions[collisions$day_of_week == 1, ]
+
+# Analiza broja nesreća po satu za nedjelju
+collisions_aggregated_time_sunday <- aggregate(accident_index ~ hour, data = collisions_sunday, FUN = length)
+
+# Prikaz dijagrama za učestalost nesreća po satu u nedjelju
+ggplot(collisions_aggregated_time_sunday, aes(x = factor(hour), y = accident_index, fill = factor(hour))) +
+  geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema satu (nedjelja)", x = "Sat", y = "Broj nesreća") +
+  theme_minimal()
+
+```
+
+Proveli smo analizu prometnih nesreća tijekom različitih mjeseci kako bismo dobili uvid u varijacije tijekom godine. Prvo smo dodali stupac "month" koji označava mjesec svake nesreće. Zatim smo koristili funkciju aggregate kako bismo grupirali podatke prema mjesecima, stvarajući pregled ukupnog broja nesreća za svaki mjesec.Na x-osi su označeni mjeseci, dok y-os prikazuje ukupan broj nesreća.
+
+```{r}
+collisions$month <- format(as.Date(collisions$date, format = '%d/%m/%y'), "%m")
+
+month_labels <- c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December")
+
+collisions_aggregated_month_text <- aggregate(accident_index ~ month, data = collisions, FUN = length)
+
+collisions_aggregated_month_text$month <- factor(collisions_aggregated_month_text$month, levels = sprintf("%02d", 1:12), labels = month_labels)
+
+ggplot(collisions_aggregated_month_text, aes(x = month, y = accident_index, fill = month)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = accident_index), vjust = -0.5, size = 3) + 
+  labs(title = "Broj nesreća prema mjesecu", x = "Mjesec", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
+
+Proveli smo analizu prometnih nesreća uzimajući u obzir godišnje varijacije. Dodali smo stupac "year" koji označava godinu svake nesreće. Korištenjem funkcije aggregate grupirali smo podatke prema godinama (u ovom slučaju 2020., 2021. i 2022.), stvarajući pregled ukupnog broja nesreća za svaku od tih godina.Na x-osi su označene godine, dok y-os prikazuje ukupan broj nesreća. 
+
+
+```{r}
+collisions$accident_year <- as.character(collisions$accident_year)
+collisions_aggregated_year_text <- aggregate(accident_index ~ accident_year, data = collisions, FUN = length)
+
+ggplot(collisions_aggregated_year_text, aes(x = accident_year, y = accident_index, fill = accident_year)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema godini", x = "Godina", y = "Broj nesreća") +
+    geom_text(aes(label = accident_index), vjust = -0.5) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+
+ggplot(collisions, aes(x = month, y = accident_index)) +
+  geom_jitter(aes(color = month), alpha = 0.7) +
+  labs(title = "Učestalost nesreća prema mjesecima", x = "Mjesec", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_color_brewer(palette = "Set3")
+
+```
+
+
+
+
+VANJSKI UVJETI I PRIKAZ NJIHOVOG UTJECAJA NA UČESTALOST NESREćA
+
+U našu analizu uključili smo i proučavanje vanjskih faktora. Istraživali smo povezanost nesreća s vremenskim uvjetima, različitim razinama osvjetljenja te ograničenjima brzine vožnje. Ovaj dio analize nam omogućuje dublje razumijevanje utjecaja okolinskih čimbenika na sigurnost u prometu, pružajući korisne informacije o područjima koja bi mogla imati veće izazove ili zahtijevati dodatne sigurnosne mjere.
+
+
+U analizi vanjskih faktora koji utječu na prometne nesreće, detaljno smo proučavali vremenske uvjete kako bismo razumjeli njihovu povezanost s učestalošću nesreća. Koristili smo mapiranje vremenskih uvjeta kako bismo dobili čitljiviji prikaz podataka. Svaki vremenski uvjet ima svoj tekstualni ekvivalent koji smo dodijelili podatku, čime smo olakšali interpretaciju rezultata.
+Koristeći ovo mapiranje, stvorili smo novi atribut weather_condition_text koji odražava tekstualni opis vremenskih uvjeta za svaku nesreću. Zatim smo grupirali podatke prema ovom novom atributu koristeći funkciju aggregate, analizirajući ukupan broj nesreća za svaki od definiranih vremenskih uvjeta.
+Analizom ovih podataka, primijetili smo da je najveći broj nesreća zabilježen pri dobrim vremenskim uvjetima, ali važno je napomenuti da ovi podaci trebaju biti interpretirani s oprezom, budući da nemamo informacije o ukupnom broju dana s dobrim vremenom u našem skupu podataka.
+```{r}
+weather_conditions_mapping <- c(
+  "Fine no high winds",
+  "Raining no high winds",
+  "Snowing no high winds",
+  "Fine + high winds",
+  "Raining + high winds",
+  "Snowing + high winds",
+  "Fog or mist",
+  "Other",
+  "Unknown")
+collisions$weather_condition_text <- weather_conditions_mapping[collisions$weather_conditions]
+
+collisions_aggregated_weather <- aggregate(accident_index ~ weather_condition_text, data = collisions, FUN = length)
+
+ggplot(collisions_aggregated_weather, aes(x = weather_condition_text, y = accident_index, fill = weather_condition_text)) +
+  geom_bar(stat = "identity") +
+    geom_text(aes(label = accident_index), vjust = -0.5, size = 3) + 
+  labs(title = "Broj nesreća prema vremenskim uvjetima", x = "Vremenski uvjeti", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+U našoj analizi uvjeta svjetlosti kao vanjskog faktora koji može utjecati na prometne nesreće, koristili smo mapiranje uvjeta svjetlosti kako bismo dobili jasniji prikaz podataka. Stvorili smo novi atribut light_conditions_text s tekstualnim opisom uvjeta svjetlosti za svaku nesreću, grupirali smo podatke prema uvjetima svjetlosti koristeći funkciju aggregate, analizirajući ukupan broj nesreća za svaki od definiranih uvjeta svjetlosti. Rezultate smo vizualizirali pomoću grafa, gdje smo na osi x prikazali različite uvjete svjetlosti, dok je os y predstavljala broj nesreća.
+
+```{r}
+light_conditions_mapping <- c("Daylight", "Data missing or out of range", "Data missing or out of range", "Darkness - lights lit", "Darkness - lights unlit", "Darkness - no lighting", "Darkness - lighting unknown")
+
+collisions$light_conditions_text <- light_conditions_mapping[match(collisions$light_conditions, c("1", "-1", "-1", "4", "5", "6", "7"))]
+
+collisions_aggregated_light <- aggregate(accident_index ~ light_conditions_text, data = collisions, FUN = length)
+
+ggplot(collisions_aggregated_light, aes(x = light_conditions_text, y = accident_index, fill = light_conditions_text)) +
+  geom_bar(stat = "identity") +
+    geom_text(aes(label = accident_index), vjust = -0.5, size=2) + 
+  labs(title = "Broj nesreća prema uvjetima svjetlosti", x = "Uvjeti svjetlosti", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+PREMA OGRANIčENJU BRZINE VOžNJE
+
+U analizi ograničenja brzine vožnje, važno je napomenuti da su brzinska ograničenja izražena u miljama na sat (mph), što je u skladu s britanskim prometnim standardima. Konkretno, brzinska ograničenja koja smo analizirali odnose se na uobičajene vrijednosti u Engleskoj: 20 mph, 30 mph, 40 mph, 50 mph, 60 mph, i 70 mph. Ova raznolikost ograničenja odražava se na x-osi histograma, pružajući pregled učestalosti nesreća u odnosu na različita brzinska ograničenja diljem analiziranog područja.
+```{r}
+collisions_speed_counts <- collisions %>%
+  group_by(speed_limit) %>%
+  summarize(count = n())
+
+histogram_speed_limit <- ggplot(collisions, aes(x = speed_limit)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  
+  labs(title = "Histogram učestalosti nesreća prema ograničenjima brzine vožnje",
+       x = "Brzinsko ograničenje [mph]",
+       y = "Učestalost nesreća") +
+  theme_minimal() +
+  
+  geom_text(data = collisions_speed_counts, aes(x = speed_limit, y = count, label = count),
+            vjust = -0.5, size = 3)
+
+print(histogram_speed_limit)
+
+
+```
+
+
+
+PO TIPU CESTE
+U analizi prometnih nesreća prema tipu ceste, koristili smo mapiranje tipova ceste kako bismo dobili čitljiviji prikaz podataka. Stvorili smo novi atribut road_type_text koji sadrži tekstualni opis tipa ceste za svaku nesreću.
+Zatim smo grupirali podatke prema ovom novom atributu koristeći funkciju aggregate, analizirajući ukupan broj nesreća za svaki od definiranih tipova ceste. Rezultate smo vizualizirali pomoću grafa koji prikazuje broj nesreća prema različitim tipovima cesta. Na x-osi su prikazani tekstualni opisi tipova cesta, dok je y-osa predstavljala ukupan broj nesreća.
+```{r}
+road_type_mapping <- c(
+  "Roundabout", "One way street", "Dual carriageway", "Single carriageway",
+  "Slip road", "Unknown", "One way street/Slip road", "Data missing or out of range"
+)
+
+collisions$road_type_text <- road_type_mapping[match(collisions$road_type, c("1", "2", "3", "6", "7", "9", "12", "-1"))]
+
+collisions_aggregated_road_type <- aggregate(accident_index ~ road_type_text, data = collisions, FUN = length)
+
+ggplot(collisions_aggregated_road_type, aes(x = road_type_text, y = accident_index, fill = road_type_text)) +
+  geom_bar(stat = "identity") +
+    geom_text(aes(label = accident_index), vjust = -0.5, size = 3) + 
+  labs(title = "Broj nesreća prema tipu ceste", x = "Tip ceste", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+
+U analizi broja vozila u nesrećama kroz godine, koristili smo box plot graf kako bismo istražili distribuciju podataka. Svaka kutija (box) predstavlja interkvartilni raspon (IQR), dok linija unutar kutije označava medijan. Whiskeri, proširujući se do najudaljenije podatkovne točke pokazuju varijabilnost podataka. Analizom ovog box plot grafa možemo bolje razumjeti raspodjelu broja vozila u nesrećama za svaku od godina obuhvaćenih našim podacima. Uočavamo da je uglavnom svake godine broj vozila bio oko 2, ali ima i odstupanja.
+
+```{r}
+boxplot_plot_vehicles <- ggplot(collisions, aes(x = as.factor(accident_year), y = number_of_vehicles, fill = as.factor(accident_year))) +
+  geom_boxplot(position = "dodge") +
+  labs(title = "Box Plot analiza broja vozila u nesreći po godinama",
+       x = "Godina nesreće",
+       y = "Broj vozila u nesreći",
+       fill = "Godina nesreće") +
+  scale_fill_discrete(name = "Godina nesreće") +
+  theme_minimal()
+
+print(boxplot_plot_vehicles)
+
+
+```
+
+
+VOZAČI I NJIHOVE KARATERISTIKE KAO UTJECAJI NA UČESTALOST NESREĆA
+
+Fokusirali smo se i na vozače i njihove karakteristike, uključujući spol i dobnu skupinu. Vizualno smo prikazali raspodjelu nesreća prema spolu vozača, dobnoj skupini, okolini prebivališta vozača te vrstu vozila uključenu u nesreće. 
+Pri analizi ovisnosti između spola vozača i učestalosti nesreća, bitno je napomenuti da se zbog nedostatka ukupnog broja muških i ženskih vozača, ova ovisnost ne može sa sigurnošću utvrditi. 
+SPOL
+```{r}
+
+sex_of_driver_mapping <- c("Male", "Female", "Not known", "Data missing or out of range")
+
+#Najprije smo napravili "left join" data frame-ova "collisions" i "vehicles" kako bismo dobili samo vozila koja su sudjelovala u nesrećama na području Velikog Londona tijekom razdoblja 2020.-2022.
+
+collision_vehicles <- left_join(collisions, vehicles, by = c("accident_index" = "accident_index"))
+collision_vehicles$sex_of_driver_text <- sex_of_driver_mapping[match(collision_vehicles$sex_of_driver, c("1", "2", "3", "-1"))]
+collision_vehicles_aggregated_sex <- aggregate(accident_index ~ sex_of_driver_text, data = collision_vehicles, FUN = length)
+
+ggplot(collision_vehicles_aggregated_sex, aes(x = factor(sex_of_driver_text), y = accident_index, fill = factor(sex_of_driver_text))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Broj nesreća prema spolu vozača", x = "Spol vozača", y = "Broj vozača tog spola koji su sudjelovali u nesrećama") +
+  theme_minimal() +
+    geom_text(aes(label = accident_index), vjust = -0.5) + 
+  theme(legend.position = "right") +  
+  scale_y_continuous(breaks = NULL) 
+
+```
+
+
+
+U analizi karakteristika vozača, posebnu pažnju posvetili smo dobnoj skupini vozača kako bismo razumjeli raspodjelu nesreća prema različitim dobnim skupinama. Korištenjem podataka o dobnim skupinama vozača, stvorili smo graf koji prikazuje broj nesreća za svaku definiranu dobnu skupinu
+
+DOBNA SKUPINA
+```{r}
+age_band_of_driver_mapping <- c(
+  "0 - 5", "6 - 10", "11 - 15", "16 - 20", "21 - 25",
+  "26 - 35", "36 - 45", "46 - 55", "56 - 65", "66 - 75", "Over 75", "Data missing or out of range"
+)
+
+collision_vehicles$age_band_of_driver_text <- age_band_of_driver_mapping[match(collision_vehicles$age_band_of_driver, c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "-1"))]
+
+collision_vehicles_aggregated_age_band_of_driver <- aggregate(accident_index ~ age_band_of_driver_text, data = collision_vehicles, FUN = length)
+
+ggplot(collision_vehicles_aggregated_age_band_of_driver, aes(x = age_band_of_driver_text, y = accident_index, fill = age_band_of_driver_text)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Broj vozača prema dobnoj skupini vozača", x = "Dobna skupina vozača", y = "Broj vozača d.s. koji su sudjelovali u nesrećama") +
+  theme_minimal() +
+    geom_text(aes(label = accident_index), vjust = -0.5, size = 3) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
+
+
+U fazi analize karakteristika vozača, istraživali smo tip područja prebivališta vozača kako bismo razumjeli povezanost s učestalošću nesreća. Različite vrste područja, uključujući urbana područja, mala mjesta i ruralna područja, grupirane su i analizirane u odnosu na broj nesreća.Na x-osi označene su različite kategorije tipova područja prebivališta vozača, a y-os prikazuje broj nesreća. 
+
+
+```{r}
+driver_home_area_type_mapping <- c("Urban area", "Small town", "Rural", "Data missing or out of range")
+
+collision_vehicles$driver_home_area_type_text <- driver_home_area_type_mapping[match(collision_vehicles$driver_home_area_type, c("1", "2", "3", "-1"))]
+
+collision_vehicles_aggregated_driver_home_area_type <- aggregate(accident_index ~ driver_home_area_type_text, data = collision_vehicles, FUN = length)
+
+ggplot(collision_vehicles_aggregated_driver_home_area_type, aes(x = driver_home_area_type_text, y = accident_index, fill = driver_home_area_type_text)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Broj vozača sudionika nesreća prema njihovom području prebivališta", x = "Tip područja prebivališta", y = "Broj vozača sudionika s područja prebivališta") +
+  theme_minimal() +
+      geom_text(aes(label = accident_index), vjust = -0.5, size =3) + 
+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+U analizi tipova vozila uključenih u prometne nesreće, koristili smo mapiranje tipova vozila kako bismo olakšali interpretaciju podataka. Rezultati analize prikazuju ukupan broj nesreća za svaki od definiranih tipova vozila.
+U našem skupu podataka, tip vozila označen kao "Car" često se pojavljuje, pa smo dodatno filtrirali podatke kako bismo stvorili jasniju analizu isključujući nesreće s ovim tipom vozila. Ovaj pristup omogućuje fokusiranje na ostale tipove vozila i pruža precizniji uvid u učestalost nesreća koji se ne odnosi na automobile.
+```{r}
+vehicle_type_mapping <- c(
+  "Pedal cycle", "Motorcycle 50cc and under", "Motorcycle 125cc and under", "Motorcycle over 125cc and up to 500cc",
+  "Motorcycle over 500cc", "Taxi/Private hire car", "Car", "Minibus", "Bus or coach",
+  "Ridden horse", "Agricultural vehicle", "Tram", "Van / Goods 3.5 tonnes mgw or under", "Goods over 3.5t. and under 7.5t",
+  "Goods 7.5 tonnes mgw and over", "Mobility scooter", "Electric motorcycle", "Other vehicle", "Motorcycle - unknown cc",
+  "Goods vehicle - unknown weight", "Unknown vehicle type (self rep only)", "Motorcycle - Scooter", "Motorcycle ",
+  "Motorcycle - Combination", "Motorcycle over 125cc", "Taxi)",
+  "Car", "Minibus/Motor caravan", "Goods over 3.5 tonnes",
+  "Data missing or out of range"
+)
+
+collision_vehicles$vehicle_type_text <- vehicle_type_mapping[match(collision_vehicles$vehicle_type, c("1", "2", "3", "4", "5", "8", "9", "10", "11", "16", "17", "18", "19", "20", "21", "22", "23", "90", "97", "98", "99", "103", "104", "105", "106", "108", "109", "110", "113", "-1"))]
+
+collision_vehicles_aggregated_vehicle_type <- aggregate(accident_index ~ vehicle_type_text, data = collision_vehicles, FUN = length)
+
+# Filtriranje DataFrame-a kako biste uklonili nesreće s tipom vozila "Car"
+collision_vehicles_filtered <- collision_vehicles %>%
+  filter(vehicle_type_text != "Car")
+car_accident_count <- sum(collision_vehicles$vehicle_type_text == "Car", na.rm = TRUE)
+
+
+cat("\nUkupan broj automobila koji su sudjelovali u nesrećama:", car_accident_count, "\n")
+```
+
+
+
+Uočili smo značajne promjene u analizi nakon isključenja nesreća u kojima je sudjelovao automobil. Sada najčešće uključeni tipovi vozila u prometne nesreće su "Pedal cycle" (bicikli), zatim "Motorcycle" (motocikli) te "Van" (teretna vozila). Ukupan broj nesreća s tipom vozila 'Auto' je 75498, dok je druga najznačajnija vrijednost za tip vozila bicikl i iznosi 16188, sto je značajno manje od broje nesreća u koje su uključeni automobili. 
+
+```{r}
+# Prikaz broja nesreća prema vrsti vozila s dodatkom broja pojava iznad svakog stupca
+histogram_plot_vehicle_type_filtered <- ggplot(collision_vehicles_filtered, aes(x = vehicle_type_text, fill = vehicle_type_text)) +
+  geom_bar() + 
+  labs(title = "Histogram broja nesreća prema vrsti vozila", x = "Vrsta vozila", y = "Broj nesreća") +
+  theme_minimal() +
+  
+  # Rotacija teksta ispod x-osi
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+
+  geom_text(stat = 'count', aes(label = after_stat(count)), vjust = -0.5, size = 2, color = "black")
+
+# Prikaz histograma
+print(histogram_plot_vehicle_type_filtered)
+
+
+
+```
+
+
+ŽRTVE
+
+Analizirajući i žrtve prometnih nesreća, promatrali smo njihove karakteristike, fokusirajući se na dob, spol, ozbiljnost ozljeda te vrstu prijevoza kojim su se kretale.
+
+ Kako bismo ilustrirali distribuciju broja ozlijeđenih tijekom godina, koristili smo objedinjeni histogram. Na x-osi histograma označeni su brojevi ozlijeđenih, dok je na y-osi prikazana učestalost tih brojeva za svaku godinu zasebno. Crvena boja predstavlja 2020., zelena 2021., a plava 2022.godinu.
+```{r}
+collision_casualties <- inner_join(collisions, casualties, by = c("accident_index" = "accident_index"))
+collision_casualties_aggregated_year_text <- aggregate(accident_index ~ accident_year, data = collision_casualties, FUN = length)
+
+ggplot(collision_casualties_aggregated_year_text, aes(x = accident_year, y = accident_index, fill = accident_year)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Broj žrtava prema godini", x = "Godina", y = "Broj žrtava") +
+    geom_text(aes(label = accident_index), vjust = -0.5) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+```
+
+
+
+
+Analizirali smo spol žrtava u prometnim nesrećama koristeći podatke koje smo dodijelili tekstualnom obliku. Rezultati su prikazani kroz dijagram koji ilustrira broj nesreća prema spolu žrtve.
+```{r}
+sex_of_casualty_mapping <- c("Male", "Female", "Unknown (self reported)", "Data missing or out of range")
+
+collision_casualties$sex_of_casualty_text <- sex_of_casualty_mapping[match(collision_casualties$sex_of_casualty, c("1", "2", "9", "-1"))]
+
+collision_casualties_aggregated_sex_of_casualty <- aggregate(accident_index ~ sex_of_casualty_text, data = collision_casualties, FUN = length)
+
+ggplot(collision_casualties_aggregated_sex_of_casualty, aes(x = sex_of_casualty_text, y = accident_index, fill = sex_of_casualty_text)) +
+  geom_bar(stat = "identity") +
+          geom_text(aes(label = accident_index), vjust = -0.5, size =3) +
+  labs(title = "Broj nesreća prema spolu žrtve", x = "Spol žrtve", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+U analizi karakteristika žrtava prometnih nesreća, posebnu pažnju posvetili smo dobnim skupinama žrtava. Korištenjem mapiranja dobnih skupina, stvorili smo novi atribut "age_band_of_casualty_text" te smo grupirali podatke prema ovom novom atributu, koristeći funkciju "aggregate". Graf prikazuje broj nesreća prema dobnoj skupini žrtve, gdje su na x-osi prikazane dobne skupine, na y-osi broj nesreća.
+```{r}
+age_band_of_casualty_mapping <- c(
+  "0 - 5", "6 - 10", "11 - 15", "16 - 20", "21 - 25",
+  "26 - 35", "36 - 45", "46 - 55", "56 - 65", "66 - 75", "Over 75", "Data missing or out of range"
+)
+
+collision_casualties$age_band_of_casualty_text <- age_band_of_casualty_mapping[match(collision_casualties$age_band_of_casualty, c("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "-1"))]
+
+collision_casualties_aggregated_age_band_of_casualty <- aggregate(accident_index ~ age_band_of_casualty_text, data = collision_casualties, FUN = length)
+
+ggplot(collision_casualties_aggregated_age_band_of_casualty, aes(x = age_band_of_casualty_text, y = accident_index, fill = age_band_of_casualty_text)) +
+  geom_bar(stat = "identity") +
+          geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+
+  labs(title = "Broj žrtava u nesrećama prema dobnoj skupini", x = "Dobna skupina žrtve", y = "Broj žrtava") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+U analizi ozbiljnosti ozljeda u prometnim nesrećama, koristili smo podatke o ozbiljnosti ozljeda označene kao "Fatal" (smrtonosne), "Serious" (ozbiljne), i "Slight" (lagane). Kroz mapiranje ovih kategorija ozljeda na tekstualne ekvivalente, stvorili smo novi atribut "casualty_severity_text". Zatim smo grupirali podatke prema ozbiljnosti ozljede koristeći funkciju aggregate, analizirajući ukupan broj nesreća za svaku od definiranih kategorija.
+```{r}
+casualty_severity_mapping <- c("Fatal", "Serious", "Slight")
+
+collision_casualties$casualty_severity_text <- casualty_severity_mapping[match(collision_casualties$casualty_severity, c("1", "2", "3"))]
+
+collision_casualties_aggregated_casualty_severity <- aggregate(accident_index ~ casualty_severity_text, data = collision_casualties, FUN = length)
+
+ggplot(collision_casualties_aggregated_casualty_severity, aes(x = casualty_severity_text, y = accident_index, fill = casualty_severity_text)) +
+  geom_bar(stat = "identity") +
+          geom_text(aes(label = accident_index), vjust = -0.5, size =2) + 
+
+  labs(title = "Broj nesreća prema ozbiljnosti ozljede", x = "Ozbiljnost ozljede", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+Ova vizualizacija prikazuje povezanost između ozbiljnosti ozljede u prometnoj nesreći i ograničenja brzine vožnje. Za svaku kombinaciju brzinskog ograničenja i ozbiljnosti ozljede prikazan je broj nesreća.
+
+Na osi x nalaze se različita ograničenja brzine vožnje izražena u miljama na sat (mph), dok se na osi y nalazi broj nesreća. Različite boje stupaca označavaju različite razine ozbiljnosti ozljeda (fatalne, ozbiljne, lakše ozljede).
+```{r}
+collision_casualties_aggregated_severity_speed <- collision_casualties %>%
+  group_by(speed_limit, casualty_severity_text) %>%
+  summarise(count = n(), .groups = 'drop')
+
+
+# Prikaz povezanosti ozbiljnosti ozljede i ograničenja brzine pomoću dijagrama sa stupcima
+plot_severity_speed <- ggplot(collision_casualties_aggregated_severity_speed, aes(x = speed_limit, y = count, fill = casualty_severity_text)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Povezanost ozbiljnosti ozljede i ograničenja brzine vožnje",
+       x = "Brzinsko ograničenje [mph]",
+       y = "Broj nesreća",
+       fill = "Ozbiljnost ozljede") +
+  theme_minimal()
+
+# Prikaz dijagrama
+print(plot_severity_speed)
+
+```
+
+
+U analizi žrtava prometnih nesreća, koristili smo grupiranje podataka prema vrsti žrtve. Svaka vrsta žrtve je označena brojem, a kako bismo olakšali interpretaciju rezultata, ti brojevi su prevedeni u tekstualni oblik pomoću priručnika za uporabu podataka. Na temelju tih tekstualnih opisa stvoren je novi atribut nazvan "casualty_type_text", koji odražava vrstu žrtve tj. prijevozno sredstvo kojim se žrtva kretala. Grafički prikaz prikazuje broj nesreća prema vrsti žrtve, gdje su na x-osi prikazane različite vrste žrtava, na y-osi broj nesreća. 
+```{r}
+casualty_type_mapping <- c(
+  "Pedestrian", "Cyclist", "Motorcycle 50cc and under rider or passenger",
+  "Motorcycle 125cc and under rider or passenger", "Motorcycle over 125cc and up to 500cc rider or passenger",
+  "Motorcycle over 500cc rider or passenger", "Taxi/Private hire car occupant", "Car occupant",
+  "Minibus (8 - 16 passenger seats) occupant", "Bus or coach occupant (17 or more pass seats)",
+  "Horse rider", "Agricultural vehicle occupant", "Tram occupant",
+  "Van / Goods vehicle (3.5 tonnes mgw or under) occupant", "Goods vehicle (over 3.5t. and under 7.5t.) occupant",
+  "Goods vehicle (7.5 tonnes mgw and over) occupant", "Mobility scooter rider",
+  "Electric motorcycle rider or passenger", "Other vehicle occupant",
+  "Motorcycle - unknown cc rider or passenger", "Goods vehicle (unknown weight) occupant",
+  "Unknown vehicle type (self rep only)", "Motorcycle - Scooter (1979-1998)",
+  "Motorcycle (1979-1998)", "Motorcycle - Combination (1979-1998)",
+  "Motorcycle over 125cc (1999-2004)", "Taxi (excluding private hire cars) (1979-2004)",
+  "Car (including private hire cars) (1979-2004)", "Minibus/Motor caravan (1979-1998)",
+  "Goods over 3.5 tonnes (1979-1998)", "Data missing or out of range"
+)
+
+collision_casualties$casualty_type_text <- casualty_type_mapping[match(collision_casualties$casualty_type, c("0", "1", "2", "3", "4", "5", "8", "9", "10", "11", "16", "17", "18", "19", "20", "21", "22", "23", "90", "97", "98", "99", "103", "104", "105", "106", "108", "109", "110", "113", "-1"))]
+
+collision_casualties_aggregated_casualty_type <- aggregate(accident_index ~ casualty_type_text, data = collision_casualties, FUN = length)
+
+bar_chart_casualty_type <- ggplot(collision_casualties_aggregated_casualty_type, aes(x = casualty_type_text, y = accident_index, fill = casualty_type_text)) +
+  geom_col() +
+          geom_text(aes(label = accident_index), vjust = -0.5, size = 2) + 
+
+  labs(title = "Broj nesreća prema vrsti ozljede", x = "Vrsta ozljede", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+
+print(bar_chart_casualty_type)
+
+
+
+```
+
+
+
+
+
+PRISUTSTVO POLICIJE
+ Stvorili smo novi atribut "police_attendance_text" koji odražava tekstualni opis prisustva policajca za svaku nesreću u skladu s definiranim situacijama. Zatim smo grupirali podatke prema ovom novom atributu pomoću funkcije "aggregate", analizirajući ukupan broj nesreća za svako definirano stanje prisustva policajca.
+Graf prikazuje broj nesreća prema prisustvu policajca, pri čemu su na x-osi prikazane različite situacije prisustva policajca, na y-osi broj nesreća. Uočava se da su policajci uglavnom uvijek pristigli na mjesto nesreće, a situacije gdje to nije bio slučaj često su rezultat samoprijave sudionika nesreće
+```{r}
+police_attendance_mapping <- c("Yes", "No", "No - self completion form", "Data missing or out of range")
+
+collisions$police_attendance_text <- police_attendance_mapping[match(collisions$did_police_officer_attend_scene_of_accident, c("1", "2", "3", "-1"))]
+
+collisions_aggregated_police_attendance <- aggregate(accident_index ~ police_attendance_text, data = collisions, FUN = length)
+
+ggplot(collisions_aggregated_police_attendance, aes(x = police_attendance_text, y = accident_index, fill = police_attendance_text)) +
+  geom_bar(stat = "identity") +
+          geom_text(aes(label = accident_index), vjust = -0.5, size = 2.5) + 
+
+  labs(title = "Broj nesreća prema prisustvu policajca na mjestu nesreće", x = "Prisustvo policajca", y = "Broj nesreća") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+
+
+
