@@ -31,7 +31,7 @@ function Map({ calculateButton, finalData }) {
             try {
                 console.log("Initializing map...");
                 const mapInstance = tt.map({
-                    key: "aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4",
+                    key: "UyWxGSKraEMZF3wJTgMb4pHLKgpYGnOb",
                     container: mapElement.current,
                     center: [mapLongitude, mapLatitude],
                     zoom: 10
