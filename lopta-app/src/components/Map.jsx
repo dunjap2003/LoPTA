@@ -2,6 +2,7 @@ import '@tomtom-international/web-sdk-maps/dist/maps.css'; // Import the CSS sty
 import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
+import axios from 'axios';
 
 function Map({ calculateButton, finalData }) {
     const mapElement = useRef();
@@ -11,6 +12,24 @@ function Map({ calculateButton, finalData }) {
     const [markers, setMarker] = useState([]);
     const [allPoints, setAllPoints] = useState([]);
     const [final, setFinal] = useState(null);
+
+    const sendDataToPlumber = async (allPointsData) => {
+        try {
+            const url = '/api/coordinates'; // Use the relative path
+            const response = await axios.post(url, allPointsData, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Encoding': 'gzip',
+                },
+            });
+            console.log('Response from Plumber API:', response.data);
+        } catch (error) {
+            console.error('Error sending data to the Plumber API:', error);
+        }
+    };
+
+
+
 
     const updateLongitude = (value) => {
         setMapLongitude((value));
@@ -89,7 +108,7 @@ function Map({ calculateButton, finalData }) {
         console.log("final dataaa: ", finalData);
         setFinal(finalData);
     }, [finalData]);
-    
+
     const displayRoute = (geoJson) => {
         map.addLayer({
             'id': 'route',
@@ -103,7 +122,7 @@ function Map({ calculateButton, finalData }) {
                 'line-width': 6
             }
         })
-    } 
+    }
 
     const createRoute = async () => {
         try {
@@ -117,11 +136,11 @@ function Map({ calculateButton, finalData }) {
                     key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
                     locations: markers.map((marker) => marker.getLngLat()),
                     travelMode: 'car'
-                };  
-                
+                };
+
                 console.log("lokacije: ", routeOptions.locations);
             }
-            else{
+            else {
                 setMarker(prevMarkers => {
                     const startingMarker = new tt.Marker().setLngLat(finalData.starting).addTo(map);
                     const updatedMarkers = [...prevMarkers, startingMarker];
@@ -147,12 +166,13 @@ function Map({ calculateButton, finalData }) {
                 console.log("route data ", routeData);
                 const geoJson = routeData.toGeoJson();
                 displayRoute(geoJson);
-                const allPointsData = [];
-                routeData.routes[0].legs[0].points.forEach(point => {
-                    allPointsData.push(point);
-                });
-                console.log(allPointsData);
-                setAllPoints(allPointsData);
+                const allPointsData = routeData.routes[0].legs[0].points.map(point => ({ ...point }));
+
+                console.log("TOCKE PROLAZA->", allPointsData);
+
+
+                console.log("allPoints: ", allPoints);
+                sendDataToPlumber(allPointsData);
             } else {
                 console.error("Error calculating route: Invalid route data");
             }
@@ -164,7 +184,7 @@ function Map({ calculateButton, finalData }) {
     useEffect(() => {
         createRoute();
     }, [markers]);
-      
+
     return (
         <>
             <div className="flex items-center w-full">
@@ -174,7 +194,7 @@ function Map({ calculateButton, finalData }) {
                             <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '600px' }} />
                         </div>
                     </div>
-                </div> 
+                </div>
             </div>
         </>
 
