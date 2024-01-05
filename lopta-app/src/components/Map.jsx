@@ -50,7 +50,7 @@ function Map({ calculateButton, finalData }) {
             try {
                 console.log("Initializing map...");
                 const mapInstance = tt.map({
-                    key: "aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4",
+                    key: "UyWxGSKraEMZF3wJTgMb4pHLKgpYGnOb",
                     container: mapElement.current,
                     center: [mapLongitude, mapLatitude],
                     zoom: 10
@@ -152,7 +152,7 @@ function Map({ calculateButton, finalData }) {
                     return updatedMarkers;
                 });
                 routeOptions = {
-                    key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
+                    key: 'UyWxGSKraEMZF3wJTgMb4pHLKgpYGnOb',
                     locations: [finalData.starting, finalData.destination],
                     travelMode: 'car'
                 }
