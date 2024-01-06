@@ -89,7 +89,7 @@ function Map({ calculateButton, finalData }) {
         console.log("final dataaa: ", finalData);
         setFinal(finalData);
     }, [finalData]);
-    
+
     const displayRoute = (geoJson) => {
         map.addLayer({
             'id': 'route',
@@ -103,7 +103,7 @@ function Map({ calculateButton, finalData }) {
                 'line-width': 6
             }
         })
-    } 
+    }
 
     const createRoute = async () => {
         try {
@@ -114,14 +114,14 @@ function Map({ calculateButton, finalData }) {
 
             if (finalData.checkbox === false) {
                 routeOptions = {
-                    key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
+                    key: 'UyWxGSKraEMZF3wJTgMb4pHLKgpYGnOb',
                     locations: markers.map((marker) => marker.getLngLat()),
                     travelMode: 'car'
-                };  
-                
+                };
+
                 console.log("lokacije: ", routeOptions.locations);
             }
-            else{
+            else {
                 setMarker(prevMarkers => {
                     const startingMarker = new tt.Marker().setLngLat(finalData.starting).addTo(map);
                     const updatedMarkers = [...prevMarkers, startingMarker];
@@ -133,7 +133,7 @@ function Map({ calculateButton, finalData }) {
                     return updatedMarkers;
                 });
                 routeOptions = {
-                    key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
+                    key: 'UyWxGSKraEMZF3wJTgMb4pHLKgpYGnOb',
                     locations: [finalData.starting, finalData.destination],
                     travelMode: 'car'
                 }
@@ -164,7 +164,7 @@ function Map({ calculateButton, finalData }) {
     useEffect(() => {
         createRoute();
     }, [markers]);
-      
+
     return (
         <>
             <div className="flex items-center w-full">
@@ -174,7 +174,7 @@ function Map({ calculateButton, finalData }) {
                             <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '600px' }} />
                         </div>
                     </div>
-                </div> 
+                </div>
             </div>
         </>
 
