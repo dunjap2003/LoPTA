@@ -187,13 +187,10 @@ function Map({ calculateButton, finalData }) {
 
     return (
         <>
-            <div className="flex items-center w-full">
-                <div className="Map">
-                    <div className="pt-16 pl-10 container w-full h-120 flex justify-center items-center">
-                        <div className="w-full h-96 shadow-2xl flex flex-col justify-center items-center">
-                            <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '600px' }} />
-                        </div>
-                    </div>
+            <div className="flex items-stretch w-full h-screen">
+                <div className="Map w-full h-full flex justify-center items-center shadow-2xl">
+                    {/* Your map element goes here */}
+                    <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '100%' }}></div>
                 </div>
             </div>
         </>
