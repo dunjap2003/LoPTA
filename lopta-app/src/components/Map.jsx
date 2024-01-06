@@ -133,7 +133,7 @@ function Map({ calculateButton, finalData }) {
 
             if (finalData.checkbox === false) {
                 routeOptions = {
-                    key: 'aLgQNoPtQzJe5nGzbNocRvlSyQEjlOF4',
+                    key: 'UyWxGSKraEMZF3wJTgMb4pHLKgpYGnOb',
                     locations: markers.map((marker) => marker.getLngLat()),
                     travelMode: 'car'
                 };
