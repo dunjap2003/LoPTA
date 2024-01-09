@@ -15,6 +15,7 @@ library(randomForest)
 library(tidyverse)
 library(stringr)
 library(jsonlite)
+library(caret)
 ```
 
 ```{r}
@@ -30,6 +31,8 @@ collisions <- select(collisions, accident_index, accident_year, longitude, latit
 
 collisions
 ```
+
+
 
 ```{r}
 collisions$month <- format(as.Date(collisions$date, format = '%d/%m/%y'), "%m") %>% as.factor(.)
@@ -715,7 +718,7 @@ final_data <- fromJSON(data_json_string, flatten = TRUE)
 getMatchingCoordinates <- function(data, collisions) {
   matching_rows <- apply(collisions, 1, function(coll) {
     any(apply(data, 1, function(row) {
-      all(round(as.numeric(coll[c('longitude', 'latitude')]), 3) == round(row[c('lng', 'lat')], 3))
+      all(round(as.numeric(coll[c('longitude', 'latitude')]), 4) == round(row[c('lng', 'lat')], 4))
     }))
   })
 
@@ -756,3 +759,119 @@ filteredDF <- getCoordinates(collisions)
 filteredDF
 
 ```
+
+
+RANDOM FOREST ZA VARIJABLU accident_severity, PODUDARANJE PO KOORDINATAMA
+
+Random forest provodimo tako da prvo podijelimo podatke. 2/3 podataka uzimamo za  skup za učenje (train set), a 1/3 za testiranje (test set).
+
+
+```{r}
+set.seed(123)
+index <- sample(1:nrow(newDF), 0.7 * nrow(newDF))
+train_data <- newDF[index, ]
+test_data <- newDF[-index, ]
+
+
+```
+
+
+Pretvaram u faktor varijablu
+```{r}
+train_data$accident_severity <- as.factor(train_data$accident_severity)
+test_data$accident_severity <- as.factor(test_data$accident_severity)
+#print(levels(test_data2$accident_severity))
+```
+
+Nakon tog biram varijable koje želim koristiti za predikciju i spremam ih u vektor predictors. Za ovisnu varijablu postavljam accident_severity jer je to ono što želimo predvidjeti.
+
+```{r}
+model <- randomForest(accident_severity ~ longitude + latitude, data = train_data, ntree = 500)
+print(model)
+```
+
+
+```{r}
+
+predictions <- predict(model, newdata = test_data, type = "response")
+print(predictions)
+
+```
+
+```{r}
+predictions_df <- data.frame(Stvarne_vrijednosti = test_data$accident_severity, Predviđene_vrijednosti = predictions)
+
+print(predictions_df)
+
+```
+
+
+Koordinate koje najviše doprinose predviđanjima, izračunat ću pomoću metode varImp.
+```{r}
+var_importance <- varImp(model)
+print(var_importance)
+```
+
+
+```{r}
+plot(test_data$accident_severity, predictions, main = "Stvarne vs. Predviđene vrijednosti", xlab = "Stvarne vrijednosti", ylab = "Predviđene vrijednosti")
+
+```
+
+
+RANDOM FOREST ZA VARIJABLU accident_severity, PODUDARANJE PO DANU, SATU, MJESECU
+
+Prvo razdvajam podatke tako da 2/3 tj 70% dajem za treniranje, a 30% za test data.
+```{r}
+index2 <- sample(1:nrow(filteredDF), 0.7 * nrow(filteredDF))
+train_data2 <- filteredDF[index2, ]
+test_data2 <- filteredDF[-index2, ]
+```
+
+
+Pretvaram u faktor varijablu
+```{r}
+train_data2$accident_severity <- as.factor(train_data2$accident_severity)
+test_data2$accident_severity <- as.factor(test_data2$accident_severity)
+print(levels(test_data2$accident_severity))
+```
+
+
+
+
+Sada za parametre po kojima radim random forest biram
+
+```{r}
+model2 <- randomForest(accident_severity ~ day_of_week + month + hour, data = train_data2, ntree = 500)
+print(model2)
+```
+```{r}
+predictions2 <- predict(model2, newdata = test_data2, type = "response")
+print(predictions2)
+```
+
+Želimo urednije posložene podatke pa spremamo u dataframe radi lakše usporedbe stvarnih i predviđenih vrijednosti
+```{r}
+predictions_df2 <- data.frame(Stvarne_vrijednosti = test_data2$accident_severity, Predviđene_vrijednosti = predictions2)
+
+print(predictions_df2)
+```
+
+```{r}
+plot(test_data2$accident_severity, predictions2, main = "Stvarne vs. Predviđene vrijednosti", xlab = "Stvarne vrijednosti", ylab = "Predviđene vrijednosti")
+
+```
+
+
+```{r}
+# Pretvaranje u faktor s odgovarajućim razinama
+predictions_factor <- factor(predictions2, levels = c(1, 2, 3))
+test_data2$accident_severity <- factor(test_data2$accident_severity, levels = c(1, 2, 3))
+
+# Matrica konfuzije
+conf_matrix2 <- confusionMatrix(predictions_factor, test_data2$accident_severity)
+print(conf_matrix2)
+
+
+```
+
