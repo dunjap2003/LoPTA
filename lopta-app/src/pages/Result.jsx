@@ -5,7 +5,7 @@ function Result() {
     return (
         <>
             <Navbar screen="Result" />
-
+            <AnalysisResults />
             <Footer />
         </>
 

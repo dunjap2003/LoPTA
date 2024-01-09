@@ -70,8 +70,8 @@ const AnalysisResults = () => {
 
   return (
     <>
-      <div className="flex">
-        <div className="ml-1 mt-10">
+      <div className="w-full h-screen bg-tertiary flex">
+        <div className="ml-5 mt-24">
           <form onSubmit={handleSubmit}>
             <div className="w-1/3">
               <div className="mb-10">
