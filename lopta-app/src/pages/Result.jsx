@@ -4,7 +4,8 @@ import Footer from "../components/Footer"
 function Result() {
     return (
         <>
-            <AnalysisResults />
+            <Navbar screen="Result" />
+
             <Footer />
         </>
 
