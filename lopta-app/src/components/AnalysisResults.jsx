@@ -1,6 +1,8 @@
 import { Bar } from "react-chartjs-2";
 import { dayData } from '../dayData';
 import { useState, useEffect } from 'react';
+import { Chart as ChartJS } from 'chart.js/auto';
+import { Chart } from 'react-chartjs-2';
 
 const AnalysisResults = () => {
   const [hour, setHour] = useState('');
@@ -56,11 +58,13 @@ const AnalysisResults = () => {
       let dataHour = [];
 
       dayData.map((day) => dataHour.push(day.hourResults[chosenHour]));
+      let dataHourFinal = [];
+      dataHour.map((data) => dataHourFinal.push(data.noOfAccidents));
       console.log(dataHour);
       setNumberDiv(false);
       setChart1(false);
       setChart2(true);
-      setHourChart(dataHour);
+      setHourChart(dataHourFinal);
     }
 
     else {
@@ -70,8 +74,8 @@ const AnalysisResults = () => {
 
   return (
     <>
-      <div className="flex">
-        <div className="ml-1 mt-10">
+      <div className="flex justify-center">
+        <div className="ml-1 mt-10 mr-24">
           <form onSubmit={handleSubmit}>
             <div className="w-1/3">
               <div className="mb-10">
@@ -137,8 +141,129 @@ const AnalysisResults = () => {
         </div>
 
         <div>
-          {numberDiv && <span>{accidents}</span>}
+          {numberDiv && <h1>{accidents}</h1>}
         </div>
+
+        <div>
+          {chart1 && (
+            <Bar className="w-500 h-500"
+              data={{
+                labels: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+                datasets: [
+                  {
+                    label: "Number of accidents",
+                    data: dayChart,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                  },
+                ],
+              }}
+              options={{
+                height: 500,
+                width: 500,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    barThickness: 50,
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0)',
+                    },
+                    ticks: {
+                      font: {
+                        size: 15,
+                      },
+                      
+                      autoSkip: false
+                    },
+
+                  },
+                  y: {
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0.1)',
+                    },
+                    ticks: {
+                      font: {
+                        size: 15,
+                      },
+                    },
+                  },
+                },
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                      font: {
+                        size: 15,
+                      },
+                    },
+                  },
+                },
+              }}
+
+            />
+          )}
+        </div>
+
+        <div>
+          {chart2 && (
+            <Bar
+              data={{
+                labels: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+                datasets: [
+                  {
+                    label: "Number of accidents",
+                    data: hourChart,
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                  },
+                ],
+              }}
+              options={{
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0)',
+                    },
+                    ticks: {
+                      font: {
+                        size: 15,
+                      },
+                    },
+                  },
+                  y: {
+                    grid: {
+                      color: 'rgba(0, 0, 0, 0.1)',
+                    },
+                    ticks: {
+                      font: {
+                        size: 15,
+                      },
+
+                      autoSkip: false
+                    },
+                  },
+                },
+                plugins: {
+                  legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                      font: {
+                        size: 15,
+                      },
+                    },
+                  },
+                },
+              }}
+              className="w-full md:w-4/5 lg:w-3/4 xl:w-2/3 mx-auto"
+            />
+          )}
+        </div>
+
       </div>
     </>
   );
