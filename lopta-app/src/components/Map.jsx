@@ -12,6 +12,43 @@ function Map({ calculateButton, finalData }) {
     const [markers, setMarker] = useState([]);
     const [allPoints, setAllPoints] = useState([]);
     const [final, setFinal] = useState(null);
+    const [combinedData, setCombinedData] = useState([]);
+
+
+    function addMarkerToLocation(fullData) {
+        // Filter out points with accident_severity >= 3
+        fullData = fullData.filter((point) => point.accident_severity < 3);
+
+        // Iterate over filtered data and add styled markers
+        fullData.forEach((point) => {
+            const lng = parseFloat(point.lng);  // Convert to number if it's a string
+            const lat = parseFloat(point.lat);  // Convert to number if it's a string
+
+            // Check if lng and lat are valid numbers
+            if (!isNaN(lng) && !isNaN(lat)) {
+                // Create a custom marker element
+                const markerElement = document.createElement('div');
+
+                // Apply different styles based on accident_severity
+                if (point.accident_severity === '1') {
+                    markerElement.className = 'marker-severity-1';
+                } else if (point.accident_severity === '2') {
+                    markerElement.className = 'marker-severity-2';
+                } else {
+                    markerElement.className = 'default-marker';
+                }
+
+                // Create a new marker and set the custom element
+                const newMarker = new tt.Marker({ element: markerElement })
+                    .setLngLat([lng, lat])
+                    .addTo(map);
+            } else {
+                console.error(`Invalid LngLat values: (${lng}, ${lat})`);
+            }
+        });
+    }
+
+
 
     const sendDataToPlumber = async (allPointsData) => {
         try {
@@ -23,6 +60,15 @@ function Map({ calculateButton, finalData }) {
                 },
             });
             console.log('Response from Plumber API:', response.data);
+
+            const combined = allPointsData.map((point, index) => ({
+                ...point,
+                accident_severity: response.data[index].accident_severity
+            }));
+            setCombinedData(combined);
+            addMarkerToLocation(combined)
+
+
         } catch (error) {
             console.error('Error sending data to the Plumber API:', error);
         }

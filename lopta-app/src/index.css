@@ -29,3 +29,24 @@
   .panel.active {
     display: flex;
   }
+
+  .marker-severity-1 {
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 50%;
+}
+
+.marker-severity-2 {
+    width: 10px;
+    height: 10px;
+    background-color: #ff6666; /* Brighter red */
+    border-radius: 50%;
+}
+
+.default-marker {
+    width: 10px;
+    height: 10px;
+    background-color: blue; /* Default color for other severities */
+    border-radius: 50%;
+}
