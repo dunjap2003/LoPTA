@@ -12,7 +12,7 @@ const Navbar = (props) => {
     const handleClose = () => setNav(!nav)
 
     return (
-        <div className='w-screen h-[80px] z-20 bg-tertiary fixed'>
+        <div className='w-screen h-[80px] z-30 bg-tertiary fixed'>
             <div className='px-2 flex justify-between items-center  w-full h-full '>
                 <div className='flex items-center px-3'>
                     <a className="text-2xl font-semibold flex items-center space--3 text-primary" href="/"><img className='w-12 inline-block items-center' src={logo} alt="logo" /> <span className="ml-5 font-bold">LoPTA</span></a>

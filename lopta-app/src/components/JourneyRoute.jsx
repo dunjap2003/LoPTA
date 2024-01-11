@@ -84,7 +84,7 @@ function JourneyRoute() {
                 </p>
               )}
             </div>
-            <div className="w-full max-w-2xl">
+            <div className="w-full max-w-2xl flex md:flex-col flex-row">
               <form className="bg-white shadow-md rounded-lg px-8 py-6 mb-4" onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <label className="block text-gray-700 text-sm font-bold mb-2">
@@ -139,6 +139,16 @@ function JourneyRoute() {
                   </button>
                 </div>
               </form>
+            </div>
+            <div className="flex items-start flex-col mt-10">
+              <div className="flex items-center mb-4">
+                <div className="w-4 h-4 bg-red-500 mr-2 rounded-full"></div>
+                <span className="text-red-500">Serious Accident</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-yellow-500 mr-2 rounded-full"></div>
+                <span className="text-yellow-500">Slight Accident</span>
+              </div>
             </div>
           </div>
         </div>

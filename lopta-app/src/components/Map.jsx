@@ -3,8 +3,11 @@ import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
 import axios from 'axios';
+import Loader from "react-spinners/ClipLoader";
+
 
 function Map({ calculateButton, finalData }) {
+    const [loaderVisible, setLoaderVisible] = useState(false);
     const mapElement = useRef();
     const [mapLongitude, setMapLongitude] = useState(-0.118092 || 0); // Providing a default value of 0 if null is encountered
     const [mapLatitude, setMapLatitude] = useState(51.50000 || 0); // Providing a default value of 0 if null is encountered
@@ -12,7 +15,7 @@ function Map({ calculateButton, finalData }) {
     const [markers, setMarker] = useState([]);
     const [allPoints, setAllPoints] = useState([]);
     const [final, setFinal] = useState(null);
-    const [combinedData, setCombinedData] = useState([]);
+
 
 
     function addMarkerToLocation(fullData) {
@@ -52,6 +55,7 @@ function Map({ calculateButton, finalData }) {
 
     const sendDataToPlumber = async (allPointsData) => {
         try {
+            setLoaderVisible(true);
             const url = '/api/coordinates'; // Use the relative path
             const response = await axios.post(url, allPointsData, {
                 headers: {
@@ -65,11 +69,12 @@ function Map({ calculateButton, finalData }) {
                 ...point,
                 accident_severity: response.data[index].accident_severity
             }));
-            setCombinedData(combined);
-            addMarkerToLocation(combined)
 
+            addMarkerToLocation(combined)
+            setLoaderVisible(false);
 
         } catch (error) {
+            setLoaderVisible(false);
             console.error('Error sending data to the Plumber API:', error);
         }
     };
@@ -235,8 +240,14 @@ function Map({ calculateButton, finalData }) {
         <>
             <div className="flex items-stretch w-full h-screen">
                 <div className="Map w-full h-full flex justify-center items-center shadow-2xl">
-                    {/* Your map element goes here */}
-                    <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '100%' }}></div>
+                    {loaderVisible && (
+                        <div className="absolute z-20 flex justify-center items-center w-4/5 h-full bg-white opacity-75">
+                            <Loader color="#4a90e2" size={75} />
+                        </div>
+
+                    )}
+
+                    <div ref={mapElement} className="mapDiv w-full h-full z-10" style={{ width: '100%' }}></div>
                 </div>
             </div>
         </>
