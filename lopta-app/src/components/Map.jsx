@@ -2,8 +2,12 @@ import '@tomtom-international/web-sdk-maps/dist/maps.css'; // Import the CSS sty
 import { useState, useEffect, useRef } from "react";
 import tt from '@tomtom-international/web-sdk-maps'; // Import the TomTom Maps SDK
 import ad from '@tomtom-international/web-sdk-services'; // Import the TomTom Maps SDK
+import axios from 'axios';
+import Loader from "react-spinners/ClipLoader";
+
 
 function Map({ calculateButton, finalData }) {
+    const [loaderVisible, setLoaderVisible] = useState(false);
     const mapElement = useRef();
     const [mapLongitude, setMapLongitude] = useState(-0.118092 || 0); // Providing a default value of 0 if null is encountered
     const [mapLatitude, setMapLatitude] = useState(51.50000 || 0); // Providing a default value of 0 if null is encountered
@@ -11,6 +15,72 @@ function Map({ calculateButton, finalData }) {
     const [markers, setMarker] = useState([]);
     const [allPoints, setAllPoints] = useState([]);
     const [final, setFinal] = useState(null);
+
+
+
+    function addMarkerToLocation(fullData) {
+        // Filter out points with accident_severity >= 3
+        fullData = fullData.filter((point) => point.accident_severity < 3);
+
+        // Iterate over filtered data and add styled markers
+        fullData.forEach((point) => {
+            const lng = parseFloat(point.lng);  // Convert to number if it's a string
+            const lat = parseFloat(point.lat);  // Convert to number if it's a string
+
+            // Check if lng and lat are valid numbers
+            if (!isNaN(lng) && !isNaN(lat)) {
+                // Create a custom marker element
+                const markerElement = document.createElement('div');
+
+                // Apply different styles based on accident_severity
+                if (point.accident_severity === '1') {
+                    markerElement.className = 'marker-severity-1';
+                } else if (point.accident_severity === '2') {
+                    markerElement.className = 'marker-severity-2';
+                } else {
+                    markerElement.className = 'default-marker';
+                }
+
+                // Create a new marker and set the custom element
+                const newMarker = new tt.Marker({ element: markerElement })
+                    .setLngLat([lng, lat])
+                    .addTo(map);
+            } else {
+                console.error(`Invalid LngLat values: (${lng}, ${lat})`);
+            }
+        });
+    }
+
+
+
+    const sendDataToPlumber = async (allPointsData) => {
+        try {
+            setLoaderVisible(true);
+            const url = '/api/coordinates'; // Use the relative path
+            const response = await axios.post(url, allPointsData, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Encoding': 'gzip',
+                },
+            });
+            console.log('Response from Plumber API:', response.data);
+
+            const combined = allPointsData.map((point, index) => ({
+                ...point,
+                accident_severity: response.data[index].accident_severity
+            }));
+
+            addMarkerToLocation(combined)
+            setLoaderVisible(false);
+
+        } catch (error) {
+            setLoaderVisible(false);
+            console.error('Error sending data to the Plumber API:', error);
+        }
+    };
+
+
+
 
     const updateLongitude = (value) => {
         setMapLongitude((value));
@@ -89,7 +159,7 @@ function Map({ calculateButton, finalData }) {
         console.log("final dataaa: ", finalData);
         setFinal(finalData);
     }, [finalData]);
-    
+
     const displayRoute = (geoJson) => {
         map.addLayer({
             'id': 'route',
@@ -103,7 +173,7 @@ function Map({ calculateButton, finalData }) {
                 'line-width': 6
             }
         })
-    } 
+    }
 
     const createRoute = async () => {
         try {
@@ -117,11 +187,11 @@ function Map({ calculateButton, finalData }) {
                     key: 'UyWxGSKraEMZF3wJTgMb4pHLKgpYGnOb',
                     locations: markers.map((marker) => marker.getLngLat()),
                     travelMode: 'car'
-                };  
-                
+                };
+
                 console.log("lokacije: ", routeOptions.locations);
             }
-            else{
+            else {
                 setMarker(prevMarkers => {
                     const startingMarker = new tt.Marker().setLngLat(finalData.starting).addTo(map);
                     const updatedMarkers = [...prevMarkers, startingMarker];
@@ -147,12 +217,13 @@ function Map({ calculateButton, finalData }) {
                 console.log("route data ", routeData);
                 const geoJson = routeData.toGeoJson();
                 displayRoute(geoJson);
-                const allPointsData = [];
-                routeData.routes[0].legs[0].points.forEach(point => {
-                    allPointsData.push(point);
-                });
-                console.log(allPointsData);
-                setAllPoints(allPointsData);
+                const allPointsData = routeData.routes[0].legs[0].points.map(point => ({ ...point }));
+
+                console.log("TOCKE PROLAZA->", allPointsData);
+
+
+                console.log("allPoints: ", allPoints);
+                sendDataToPlumber(allPointsData);
             } else {
                 console.error("Error calculating route: Invalid route data");
             }
@@ -164,17 +235,20 @@ function Map({ calculateButton, finalData }) {
     useEffect(() => {
         createRoute();
     }, [markers]);
-      
+
     return (
         <>
-            <div className="flex items-center w-full">
-                <div className="Map">
-                    <div className="pt-16 pl-10 container w-full h-120 flex justify-center items-center">
-                        <div className="w-full h-96 shadow-2xl flex flex-col justify-center items-center">
-                            <div ref={mapElement} className="mapDiv w-full h-full" style={{ width: '600px' }} />
+            <div className="flex items-stretch w-full h-screen">
+                <div className="Map w-full h-full flex justify-center items-center shadow-2xl">
+                    {loaderVisible && (
+                        <div className="absolute z-20 flex justify-center items-center w-4/5 h-full bg-white opacity-75">
+                            <Loader color="#4a90e2" size={75} />
                         </div>
-                    </div>
-                </div> 
+
+                    )}
+
+                    <div ref={mapElement} className="mapDiv w-full h-full z-10" style={{ width: '100%' }}></div>
+                </div>
             </div>
         </>
 

@@ -29,3 +29,45 @@
   .panel.active {
     display: flex;
   }
+
+  .marker-severity-1 {
+    width: 10px;
+    height: 10px;
+    background-color: red;
+    border-radius: 50%;
+}
+
+.marker-severity-2 {
+    width: 10px;
+    height: 10px;
+    background-color: rgb(234 179 8); /* Brighter red */
+    border-radius: 50%;
+}
+
+.default-marker {
+    width: 10px;
+    height: 10px;
+    background-color: blue; /* Default color for other severities */
+    border-radius: 50%;
+}
+
+/* Example styles for the loader */
+/* Example styles for the loader */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8); /* Adjust background color and opacity */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure the overlay is on top of other elements */
+}
+
+.loader {
+  /* Add styles specific to your loader */
+  width: 50px;
+  height: 50px;
+}
