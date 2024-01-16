@@ -1,8 +1,12 @@
 ---
-title: "Eksploratorna analiza prometnih nesreća na području Velikog Londona tijekom razdoblja 2020. – 2022. godine"
+title: Eksploratorna analiza prometnih nesreća na području Velikog Londona tijekom
+  razdoblja 2020. – 2022. godine
 author: "LoPTA Projekt R"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
