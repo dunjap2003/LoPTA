@@ -3,7 +3,8 @@ import { dayData } from '../dayData';
 import { useState, useEffect } from 'react';
 import { Chart as ChartJS } from 'chart.js/auto';
 import { Chart } from 'react-chartjs-2';
-import analysis from "../static/AnalizaProjektR.html"
+import analysis from '../../src/AnalizaProjektR.pdf'
+import { Link } from 'react-router-dom'
 
 const AnalysisResults = () => {
   const [hour, setHour] = useState('');
@@ -74,9 +75,9 @@ const AnalysisResults = () => {
 
   return (
     <>
-      <div className="flex-col">
-        <p className="font-bold text-primary text-xl">Full data analysis results available <a href={analysis}>here</a></p>
-        <div className="flex justify-center">
+      <div className="flex flex-col w-full h-screen">
+      <h1 className="mt-24 font-bold text-2xl text-primary">Full exploratory analysis available <a href={analysis} 	className="text-decoration-line: underline">here</a></h1>
+        <div className="flex justify-center m-auto">
           <div className="ml-1 mt-10 mr-24">
             <form onSubmit={handleSubmit}>
               <div className="w-1/3">
@@ -266,7 +267,6 @@ const AnalysisResults = () => {
               />
             )}
           </div>
-
         </div>
       </div>
     </>

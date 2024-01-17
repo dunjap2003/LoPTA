@@ -4,9 +4,9 @@ title: Eksploratorna analiza prometnih nesreća na području Velikog Londona tij
 author: "LoPTA Projekt R"
 date: "`r Sys.Date()`"
 output:
-  word_document: default
-  html_document: default
   pdf_document: default
+  html_document: default
+  word_document: default
 ---
 
 ```{r setup, include=FALSE}
