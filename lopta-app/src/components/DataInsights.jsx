@@ -4,7 +4,7 @@ function DataInsights() {
             <div className='max-w-[1240px] mx-auto'>
                 <div className='text-center'>
                     <h2 className='text-5xl font-bold text-primary'>Data Insights</h2>
-                    <p className='text-3xl py-10 text-primary'>Discover London&apos;s accident trends and risk factors through maps, trends, and correlations.</p>
+                    <p className='text-3xl py-10 text-primary'>Discover London&apos;s accident trends and risk factors through maps, trends and correlations.</p>
                 </div>
                 <div className='grid md:grid-cols-4 gap-10 px-2 text-center'>
                     <div className='bg-tertiary border py-8 rounded-xl shadow-xl p-6'>

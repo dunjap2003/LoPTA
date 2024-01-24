@@ -7,7 +7,7 @@ const Menu = [
         id: 1,
         title: "User Input",
         image: userInput,
-        description: "Input your journey details – starting point, destination, and additional parameters like weather conditions, time of day, and driver details – to receive a personalized risk assessment for your London travel."
+        description: "Input your journey details – starting point, destination, ending point – to receive a personalized risk assessment for your London travel."
     },
     {
         id: 2,

@@ -13,10 +13,6 @@ function Footer() {
                 >
                     <img src={logo} alt="" className="mb-1 w-12" style={{ filter: 'brightness(0) invert(1)' }} />
 
-
-                    <a href="#features" className="uppercase hover:text-softRed">Features</a>
-                    <a href="#download" className="uppercase hover:text-softRed">Download</a>
-                    <a href="#faq" className="uppercase hover:text-softRed">FAQ</a>
                 </div>
 
 
